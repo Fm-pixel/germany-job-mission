@@ -27,7 +27,7 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 86 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 111 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
@@ -81,6 +81,13 @@ Fixed:
 * The linter moved to the current ESLint configuration (`next lint` is being removed in Next.js 16).
   The stricter run found three real problems, now fixed: the company routes were not actually checking
   the evidence link, a request timer in the job source was never cleared, and two dead imports.
+
+## Written while waiting for the keys
+
+The three pieces that only run once an account exists had never been executed even once, so they were
+covered with tests against fakes: the Firestore driver, the Drive folder and upload logic, and the
+message Gmail sends. Two things came out of writing them — the Gmail message builder moved into its own
+file (`src/services/email/mime.ts`), and the Drive helpers now accept a client so they can be tested.
 
 ## Notes
 
