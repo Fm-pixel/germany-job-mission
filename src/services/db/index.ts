@@ -15,12 +15,28 @@ export function localTestModeEnabled(): boolean {
   return process.env.GJM_DB_DRIVER === 'local-file';
 }
 
+/**
+ * Every collection of this tool gets this in front of its name in Firestore.
+ * The Firebase project `certifypm-pro` already hosts another application, and
+ * without a prefix a collection called "documents" or "tasks" would be shared
+ * between the two. Set FIRESTORE_COLLECTION_PREFIX='' to switch it off.
+ */
+export function collectionPrefix(): string {
+  const configured = process.env.FIRESTORE_COLLECTION_PREFIX;
+  return configured === undefined ? 'gjm_' : configured;
+}
+
 export function dbStatus(): { connected: boolean; driver: string; label: string; reason?: string } {
   if (localTestModeEnabled()) {
     return { connected: true, driver: 'local-file', label: 'LOCAL TEST DATABASE — not Firestore' };
   }
   if (firebaseAdminAvailable()) {
-    return { connected: true, driver: 'firestore', label: 'Firestore' };
+    const prefix = collectionPrefix();
+    return {
+      connected: true,
+      driver: 'firestore',
+      label: prefix ? `Firestore (collections named ${prefix}…)` : 'Firestore',
+    };
   }
   return {
     connected: false,
@@ -41,7 +57,7 @@ export function getDriver(): DbDriver {
     cached = new NotConnectedDriver();
     return cached;
   }
-  cached = new FirestoreDriver(adminDb());
+  cached = new FirestoreDriver(adminDb(), collectionPrefix());
   return cached;
 }
 

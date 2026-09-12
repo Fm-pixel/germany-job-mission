@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "deploy-rules": "node scripts/deploy-rules.mjs",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "firebase:setup": "node scripts/firebase-setup.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

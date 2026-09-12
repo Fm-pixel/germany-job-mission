@@ -27,19 +27,25 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 86 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 121 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
 
-1. **Firebase project, web config and service-account JSON** — `SETUP_FOR_ME.md` step 1. Until then the
-   database and the real login show NOT CONNECTED.
+1. **Firebase (project `certifypm-pro`)** — the web app config is in the code and was checked
+   against the live project: email/password sign-in is already on. Still yours to do
+   (`SETUP_FOR_ME.md` step 1): enable **Google** and **Phone** sign-in in the console, add the live
+   Vercel address to the authorised domains, and download the **service-account key** for the server.
 2. **Google Drive folder + Drive API** — step 2. Until then documents cannot be stored.
 3. **Anthropic API key** — step 3. Until then CV reading, application writing, company research, the
    Opportunity Radar research, the Chancenkarte criteria and the assistant are switched off (the pages
    say so and the rule-based parts keep working).
-4. **Vercel deployment and `OWNER_UID`** — step 4, then step 5 to publish the database rules.
-5. **`CRON_SECRET` + GitHub secrets** — step 6, for the hourly agent run.
+4. **Vercel deployment and `OWNER_UIDS`** — step 4, then step 5 to publish the database rules.
+   Sign in with each method once and record every user id: a phone sign-in is always a separate
+   Firebase user from the email/Google one.
+5. **`CRON_SECRET` + GitHub secrets** — step 6, for the hourly agent run. The hourly schedule is
+   switched off in the workflow while the tool is being built (it had nothing to call, so every run
+   failed); step 6 says which two lines to uncomment once the app is live.
 6. **An email provider (Resend or Gmail)** — step 7. Until then approved applications wait as
    "Approved – waiting for email connection". Gmail needs you to press "Allow" once.
 
@@ -81,6 +87,29 @@ Fixed:
 * The linter moved to the current ESLint configuration (`next lint` is being removed in Next.js 16).
   The stricter run found three real problems, now fixed: the company routes were not actually checking
   the evidence link, a request timer in the job source was never cleared, and two dead imports.
+
+## Firebase sign-in (asked for after the first merges)
+
+Checked against the live project with the web key: email/password is on, and the authorised domains
+are localhost, certifypm-pro.firebaseapp.com, certifypm-pro.web.app, databutton.com and
+certifypm_pro.databutton.app — so **this Firebase project already serves another application**.
+Two things follow, both handled: every Firestore collection this tool writes is prefixed `gjm_` so the
+two apps cannot share a collection, and `OWNER_UIDS` is effectively required here, because a project
+with other people's accounts must not let them into this tool.
+
+
+The app is wired to the project `certifypm-pro` with three ways in — email and password, Google, and a
+phone code — behind one login screen. Because a phone sign-in is a different Firebase user from an
+email or Google one, the owner is now a **list** of user ids (`OWNER_UIDS`, with the old `OWNER_UID`
+still honoured), and the Firestore rules take that list too. `npm run firebase:setup` does the parts
+that can be done through the API; what is left is named exactly, in SETUP_FOR_ME.md step 1.
+
+## Written while waiting for the keys
+
+The three pieces that only run once an account exists had never been executed even once, so they were
+covered with tests against fakes: the Firestore driver, the Drive folder and upload logic, and the
+message Gmail sends. Two things came out of writing them — the Gmail message builder moved into its own
+file (`src/services/email/mime.ts`), and the Drive helpers now accept a client so they can be tested.
 
 ## Notes
 

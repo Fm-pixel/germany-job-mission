@@ -5,24 +5,96 @@ Each step ends with **how you know it worked**.
 
 ---
 
-## Step 1 — Firebase: the database and your login (15 minutes)
+## Step 1 — Firebase: the database and your login (project `certifypm-pro`)
 
-1. Open **console.firebase.google.com** and sign in with your Google account.
-2. Press **Add project**. Name it `germany-job-mission`. Switch **Google Analytics off**. Press **Create project**.
-3. In the left menu: **Build → Firestore Database → Create database**.
-   Choose **production mode** and the location **europe-west3 (Frankfurt)**. Press Enable.
-4. In the left menu: **Build → Authentication → Get started**.
-   In the list of sign-in methods click **Email/Password**, switch the first toggle on, press **Save**.
-5. Do **not** set up Storage. This tool uses your Google Drive for files instead, so no card is needed.
-6. Press the **gear icon → Project settings**. Scroll down to **Your apps**, press the **`</>`** (web) icon.
-   Name it `gjm-web`, press **Register app**. A grey box of code appears with six values
-   (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId). Copy all six — you need them below.
-7. Still in Project settings, open the tab **Service accounts** → press **Generate new private key** → **Generate key**.
-   A `.json` file downloads. Open it in a text editor and copy **the whole content**. This is a secret: never put it in a file inside the repository.
+**The web app is already registered and its config is already in the code**
+(`src/lib/firebase-config.ts`). Those six values are public identifiers, not
+secrets — they ship inside the JavaScript every visitor downloads, and Google
+documents them as safe to expose. What protects your data is the login plus the
+database rules below.
 
-**How you know it worked:** the Firestore page shows an empty database and Authentication shows "Email/Password — Enabled".
+I checked your project directly. What is already true:
 
----
+* ✅ **Email/password sign-in is switched on.**
+* ✅ Authorised domains include `localhost`, `certifypm-pro.firebaseapp.com`
+  and `certifypm-pro.web.app`.
+* ⚠️ **This project is already used by another app** — `databutton.com` and
+  `certifypm_pro.databutton.app` are on the authorised list. See 1d.
+
+### 1a. Switch on Google and Phone sign-in (3 minutes)
+
+Firebase console → **certifypm-pro** → **Authentication → Sign-in method**:
+
+| Method | What to do |
+|---|---|
+| **Google** | Enable → choose a **support email** → Save. This has to happen here: it is the moment Firebase creates the Google OAuth client. |
+| **Phone** | Enable. The free SMS quota is small; Firebase will ask for billing if you need more. |
+
+### 1b. Add your live web address (1 minute)
+
+**Authentication → Settings → Authorised domains → Add domain**, and add the
+address Vercel gives you (for example `germany-job-mission.vercel.app`).
+
+Without this, Google and phone sign-in fail on the live site with "this domain
+is not authorised" — `localhost` works, the real address does not, which is a
+confusing way to find out.
+
+### 1c. The service-account key (2 minutes)
+
+The server needs it to read and write the database and your Drive folder.
+
+1. Console → gear icon → **Project settings → Service accounts**.
+2. **Generate new private key → Generate key**. A `.json` file downloads.
+3. This one **is** a secret. It goes into Vercel as `FIREBASE_SERVICE_ACCOUNT_JSON`
+   (step 4), never into a file in the repository.
+
+Optional check, if you have the repository on a computer:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT_JSON='<paste the whole JSON>' npm run firebase:setup
+```
+
+It confirms the web app, writes the config into `.env.local`, and switches on
+Email/password and Phone for you.
+
+### 1d. Because the project is shared with another app
+
+`certifypm-pro` already serves something else (Databutton). Two consequences,
+both handled, but you should know about them:
+
+* **The data is kept apart.** Every collection this tool writes is named
+  `gjm_…` (`gjm_candidates`, `gjm_jobs`, …), so it cannot mix with the other
+  app's data. To change that, set `FIRESTORE_COLLECTION_PREFIX`.
+* **`OWNER_UIDS` is not optional here.** If the project already has user
+  accounts from the other app, this tool refuses every sign-in until you tell
+  it which user id is yours (1f). That is deliberate: without it, anyone with
+  an account in that project could open your tool.
+
+### 1e. Firestore
+
+**Build → Firestore Database**. If there is no database yet, **Create database**
+→ **production mode** → location **europe-west3 (Frankfurt)**. Do **not** set up
+Storage — this tool uses your Google Drive for files, so no card is needed.
+
+### 1f. Lock it to you (right after your first sign-in)
+
+1. Open the app and sign in **once with each method you want to use**.
+2. Console → **Authentication → Users**. Copy the **User UID** of every row that
+   is you. Google and email/password normally share one row; **a phone sign-in
+   is always its own row with its own id**.
+3. Put them all in `OWNER_UIDS`, comma separated:
+   `OWNER_UIDS=abc123...,xyz789...`
+4. Run `npm run deploy-rules` — or paste `firestore.rules` in the console and
+   replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your ids, each in quotes.
+
+If a sign-in is refused, the screen shows you the exact user id to add.
+
+**Optional, recommended:** restrict the web API key so it only works from your
+own address — console.cloud.google.com → **APIs & Services → Credentials** →
+the browser key → **Website restrictions**.
+
+**How you know it worked:** you can sign in all three ways, and **Settings**
+shows "Login (Firebase Auth) — connected" and "Owner lock — connected".
 
 ## Step 2 — Google Drive: where the documents live (5 minutes)
 
@@ -55,17 +127,13 @@ and say NOT CONNECTED.
 1. Open **vercel.com**, sign in with GitHub, press **Add New → Project** and import the repository
    `germany-job-mission`.
 2. **Before** pressing Deploy, open **Environment Variables** and add these, one per line
-   (names exactly as written):
+   (names exactly as written). The six `NEXT_PUBLIC_FIREBASE_*` values are **not** needed —
+   they are already in the code:
 
    | Name | Value |
    |---|---|
-   | `NEXT_PUBLIC_FIREBASE_API_KEY` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_APP_ID` | from step 1.6 |
-   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1.7, as one line |
+   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1c, as one line |
+   | `OWNER_UIDS` | left empty for now — you fill it in after your first sign-in (step 1f) |
    | `GOOGLE_DRIVE_FOLDER_ID` | from step 2.4 |
    | `ANTHROPIC_API_KEY` | from step 3 |
    | `CRON_SECRET` | any long random word you invent |
@@ -75,12 +143,14 @@ and say NOT CONNECTED.
    `https://germany-job-mission.vercel.app`. Copy it.
 4. Add one more environment variable `APP_URL` with that address, and press **Redeploy**
    (Deployments → the three dots on the newest one → Redeploy).
-5. Open the address on your phone or laptop. You see the login screen.
-   Because no account exists yet, it offers **Create the first account**. Create it with your email
-   and a password of at least 8 characters. **Sign-up switches itself off afterwards.**
-6. Go back to Firebase → **Authentication → Users**, click your user, copy the **User UID**.
-   Add it in Vercel as the environment variable `OWNER_UID`, then **Redeploy** once more.
-   From now on only your account can open the app.
+5. Open the address on your phone or laptop. You see the login screen with three tabs:
+   **Email**, **Google** and **Phone**. Sign in whichever way you like — with email, the first
+   time offers **Create the first account** (sign-up switches itself off afterwards).
+6. Add that address under **Authentication → Settings → Authorised domains** in Firebase,
+   or Google and phone sign-in will refuse to run on it.
+7. Go back to Firebase → **Authentication → Users** and copy the **User UID** of every row that
+   is you. Add them in Vercel as `OWNER_UIDS` (comma separated), then **Redeploy** once more.
+   From now on only your own account(s) can open the app.
 
 **How you know it worked:** you can log in and see the dashboard "My Germany Job Mission".
 
@@ -93,23 +163,36 @@ Two ways, pick one.
 **The easy way (in the browser):**
 1. Firebase console → **Build → Firestore Database → Rules** tab.
 2. Delete everything there and paste the content of the file `firestore.rules` from the repository.
-3. Replace `REPLACE_WITH_YOUR_OWNER_UID` with your User UID from step 4.6.
+3. Replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your User UID(s) from step 4.7 — each
+   in quotes, separated by commas, e.g. `['abc123', 'xyz789']`.
 4. Press **Publish**.
 
 **The automatic way (on a computer with the repository):** set `FIREBASE_SERVICE_ACCOUNT_JSON` and
-`OWNER_UID` in `.env.local`, then run `npm run deploy-rules`.
+`OWNER_UIDS` in `.env.local`, then run `npm run deploy-rules`.
 
-**How you know it worked:** the Rules tab shows your UID inside the rules and the date of publishing.
+**How you know it worked:** the Rules tab shows your UID(s) inside the rules and the date of publishing.
 
 ---
 
 ## Step 6 — The automatic runs (5 minutes)
 
-Vercel already runs the agents once a day (it is in `vercel.json`). For an hourly run as well:
+Vercel runs the agents once a day (it is in `vercel.json`) as soon as the app is deployed.
+
+**The hourly GitHub run is switched off on purpose while the tool is being built** — there is
+nothing deployed for it to call, so it only produced a failed run every hour. Switch it on when the
+app is live:
 
 1. GitHub → your repository → **Settings → Secrets and variables → Actions → New repository secret**.
 2. Add `APP_URL` (the Vercel address) and `CRON_SECRET` (the same random word as in step 4).
-3. GitHub → the **Actions** tab → "Hourly agent run" → **Enable workflow**.
+3. Edit `.github/workflows/agents.yml` and remove the `#` in front of these two lines:
+   ```yaml
+     # schedule:
+     #   - cron: '17 * * * *'
+   ```
+4. Commit. From then on it runs at 17 minutes past every hour.
+
+Until then you can still run it by hand whenever you want: **Actions → Hourly agent run → Run
+workflow**.
 
 **How you know it worked:** open the Actions tab an hour later — the run is green, and the app's
 **Settings → Audit log** shows what the agents did.

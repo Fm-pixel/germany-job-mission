@@ -32,9 +32,16 @@ function escapeName(name: string): string {
   return name.replace(/'/g, "\\'");
 }
 
-/** Finds (or creates) a subfolder inside a parent folder. */
-export async function ensureFolder(name: string, parentId: string): Promise<string> {
-  const drive = driveClient();
+/**
+ * Finds (or creates) a subfolder inside a parent folder.
+ * The client can be passed in so this logic is testable without a Drive account.
+ */
+export async function ensureFolder(
+  name: string,
+  parentId: string,
+  client: drive_v3.Drive = driveClient(),
+): Promise<string> {
+  const drive = client;
   const res = await drive.files.list({
     q: `name='${escapeName(name)}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id,name)',
@@ -62,19 +69,23 @@ export async function ensureCandidateFolder(
   candidateName: string,
   candidateId: string,
   subfolder?: string,
+  client: drive_v3.Drive = driveClient(),
 ): Promise<string> {
-  const personFolder = await ensureFolder(`${candidateName} (${candidateId})`, rootFolderId());
+  const personFolder = await ensureFolder(`${candidateName} (${candidateId})`, rootFolderId(), client);
   if (!subfolder) return personFolder;
-  return ensureFolder(subfolder, personFolder);
+  return ensureFolder(subfolder, personFolder, client);
 }
 
-export async function uploadFile(params: {
-  folderId: string;
-  filename: string;
-  mimeType: string;
-  body: Buffer;
-}): Promise<{ fileId: string }> {
-  const drive = driveClient();
+export async function uploadFile(
+  params: {
+    folderId: string;
+    filename: string;
+    mimeType: string;
+    body: Buffer;
+  },
+  client: drive_v3.Drive = driveClient(),
+): Promise<{ fileId: string }> {
+  const drive = client;
   const { Readable } = await import('node:stream');
   const res = await drive.files.create({
     requestBody: { name: params.filename, parents: [params.folderId] },

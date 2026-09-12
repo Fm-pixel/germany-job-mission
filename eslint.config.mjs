@@ -21,6 +21,12 @@ const config = [
   {
     rules: {
       '@next/next/no-img-element': 'off',
+      // A leading underscore marks something deliberately unused — a stub
+      // argument that only exists to give a fake the right shape.
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
     },
   },
 ];

@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { buildMimeMessage } from '../mime';
 import type { EmailProvider, SendInput, SendResult } from '../index';
 
 /** Gmail through OAuth on the owner's own account. */
@@ -16,40 +17,19 @@ export class GmailProvider implements EmailProvider {
     return google.gmail({ version: 'v1', auth });
   }
 
-  private buildMime(input: SendInput, from: string): string {
-    const boundary = `gjm-${Date.now().toString(36)}`;
-    const lines: string[] = [
-      `From: ${from}`,
-      `To: ${input.to}`,
-      `Subject: =?UTF-8?B?${Buffer.from(input.subject, 'utf8').toString('base64')}?=`,
-      'MIME-Version: 1.0',
-    ];
-    const attachments = input.attachments ?? [];
-    if (attachments.length === 0) {
-      lines.push('Content-Type: text/plain; charset="UTF-8"', '', input.body);
-      return lines.join('\r\n');
-    }
-    lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`, '');
-    lines.push(`--${boundary}`, 'Content-Type: text/plain; charset="UTF-8"', '', input.body, '');
-    for (const attachment of attachments) {
-      lines.push(
-        `--${boundary}`,
-        `Content-Type: ${attachment.mimeType}; name="${attachment.filename}"`,
-        'Content-Transfer-Encoding: base64',
-        `Content-Disposition: attachment; filename="${attachment.filename}"`,
-        '',
-        attachment.content.toString('base64').replace(/(.{76})/g, '$1\r\n'),
-        '',
-      );
-    }
-    lines.push(`--${boundary}--`, '');
-    return lines.join('\r\n');
-  }
-
   async send(input: SendInput): Promise<SendResult> {
     const gmail = this.client();
     const from = process.env.GMAIL_SENDER || process.env.EMAIL_FROM || 'me';
-    const raw = Buffer.from(this.buildMime(input, from), 'utf8').toString('base64url');
+    const raw = Buffer.from(
+      buildMimeMessage({
+        from,
+        to: input.to,
+        subject: input.subject,
+        body: input.body,
+        attachments: input.attachments,
+      }),
+      'utf8',
+    ).toString('base64url');
     const res = await gmail.users.messages.send({
       userId: 'me',
       requestBody: { raw, threadId: input.replyToThreadId },

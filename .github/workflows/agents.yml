@@ -3,9 +3,14 @@ name: Hourly agent run
 # Calls the app's cron route once an hour, so the agents keep working even
 # between the daily Vercel cron runs. Nothing is ever sent that your rules in
 # rules.md do not allow.
+#
+# THE HOURLY SCHEDULE IS OFF WHILE THE TOOL IS STILL BEING BUILT.
+# There is nothing deployed for it to call yet, so every run only produced a
+# failure. Switch it on when the app is live and the two secrets exist
+# (SETUP_FOR_ME.md step 6): delete the '#' from the two schedule lines below.
 on:
-  schedule:
-    - cron: '17 * * * *'
+  # schedule:
+  #   - cron: '17 * * * *'
   workflow_dispatch:
 
 jobs:

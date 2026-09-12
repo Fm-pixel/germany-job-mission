@@ -6,10 +6,23 @@ import type { BaseDoc, CollectionName } from '../types';
 export class FirestoreDriver implements DbDriver {
   readonly kind = 'firestore' as const;
   readonly label = 'Firestore';
-  constructor(private readonly db: Firestore) {}
+
+  /**
+   * `prefix` keeps this tool's collections apart from anything else living in
+   * the same Firebase project — `certifypm-pro` already hosts another app.
+   */
+  constructor(
+    private readonly db: Firestore,
+    private readonly prefix = '',
+  ) {}
+
+  /** The real Firestore collection name for one of our logical collections. */
+  private name(collection: CollectionName): string {
+    return `${this.prefix}${collection}`;
+  }
 
   async list<T extends BaseDoc>(collection: CollectionName, query?: ListQuery): Promise<T[]> {
-    let ref: FirebaseFirestore.Query = this.db.collection(collection);
+    let ref: FirebaseFirestore.Query = this.db.collection(this.name(collection));
     for (const w of query?.where ?? []) {
       ref = ref.where(w.field, w.op, w.value);
     }
@@ -20,7 +33,7 @@ export class FirestoreDriver implements DbDriver {
   }
 
   async get<T extends BaseDoc>(collection: CollectionName, id: string): Promise<T | null> {
-    const doc = await this.db.collection(collection).doc(id).get();
+    const doc = await this.db.collection(this.name(collection)).doc(id).get();
     if (!doc.exists) return null;
     return { ...(doc.data() as object), id: doc.id } as T;
   }
@@ -32,7 +45,9 @@ export class FirestoreDriver implements DbDriver {
   ): Promise<T> {
     const now = new Date().toISOString();
     const payload = { ...stripUndefined(data), createdAt: now, updatedAt: now };
-    const ref = id ? this.db.collection(collection).doc(id) : this.db.collection(collection).doc();
+    const ref = id
+      ? this.db.collection(this.name(collection)).doc(id)
+      : this.db.collection(this.name(collection)).doc();
     await ref.set(payload);
     return { ...payload, id: ref.id } as T;
   }
@@ -42,7 +57,7 @@ export class FirestoreDriver implements DbDriver {
     id: string,
     data: Partial<T>,
   ): Promise<T> {
-    const ref = this.db.collection(collection).doc(id);
+    const ref = this.db.collection(this.name(collection)).doc(id);
     const payload = { ...stripUndefined(data), updatedAt: new Date().toISOString() };
     delete (payload as Record<string, unknown>).id;
     await ref.set(payload, { merge: true });
@@ -51,6 +66,6 @@ export class FirestoreDriver implements DbDriver {
   }
 
   async remove(collection: CollectionName, id: string): Promise<void> {
-    await this.db.collection(collection).doc(id).delete();
+    await this.db.collection(this.name(collection)).doc(id).delete();
   }
 }
