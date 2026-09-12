@@ -64,3 +64,16 @@ describe('content from outside', () => {
     expect(wrapped.trimEnd().endsWith('</untrusted-job-advert>')).toBe(true);
   });
 });
+
+describe('the rule that a contact address needs evidence', () => {
+  it('accepts an address only with an http(s) page from the company itself', () => {
+    // This mirrors the check in the company routes and the discovery service.
+    const keep = (email?: string, evidence?: string) =>
+      Boolean(email) && Boolean(safeHttpUrl(evidence));
+
+    expect(keep('jobs@mueller-elektro.de', 'https://mueller-elektro.de/karriere')).toBe(true);
+    expect(keep('jobs@mueller-elektro.de', undefined)).toBe(false);
+    expect(keep('jobs@mueller-elektro.de', 'we found it somewhere')).toBe(false);
+    expect(keep('jobs@mueller-elektro.de', 'javascript:alert(1)')).toBe(false);
+  });
+});

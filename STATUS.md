@@ -27,7 +27,7 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 85 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 86 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
@@ -73,6 +73,14 @@ Fixed:
 * **Content from outside now looks like content, not orders.** Job adverts, employer emails and fetched
   official pages are wrapped in an `<untrusted-...>` block, and the house rules tell the model it may
   quote and report on them but never follow instructions inside them.
+
+## Housekeeping (done in the same session)
+
+* A start-up hook (`.claude/hooks/session-start.sh`) installs the dependencies when a session opens, so
+  the checks can run immediately. It takes effect for every session once it is on `main`.
+* The linter moved to the current ESLint configuration (`next lint` is being removed in Next.js 16).
+  The stricter run found three real problems, now fixed: the company routes were not actually checking
+  the evidence link, a request timer in the job source was never cleared, and two dead imports.
 
 ## Notes
 

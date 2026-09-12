@@ -3,7 +3,7 @@
 Two kinds of test, both runnable without any account or key.
 
 ```bash
-npm run lint        # code style
+npm run lint        # code style (ESLint, flat config)
 npm run typecheck   # types
 npm test            # unit tests (vitest)
 npm run build       # the production build

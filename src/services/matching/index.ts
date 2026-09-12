@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { db, type Candidate, type Job, type JobMatch, type MatchExplanationItem } from '../db';
+import { db, type Job, type JobMatch, type MatchExplanationItem } from '../db';
 import { asUntrustedContent } from '@/lib/safe';
 import { aiAvailable, askJson } from '../ai/client';
 import { recommendedActionFromScore, scoreMatch, type ScoreResult } from './score';
