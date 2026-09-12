@@ -23,7 +23,13 @@ export function firebaseWebConfigured(): boolean {
 }
 
 export function localModeEnabled(): boolean {
-  return process.env.GJM_LOCAL_MODE === '1' && !has('FIREBASE_SERVICE_ACCOUNT_JSON');
+  // Test-only, and never a fallback: it needs the flag, a password you chose,
+  // and the absence of a real Firebase service account.
+  return (
+    process.env.GJM_LOCAL_MODE === '1' &&
+    has('GJM_LOCAL_PASSWORD') &&
+    !has('FIREBASE_SERVICE_ACCOUNT_JSON')
+  );
 }
 
 export function anthropicConfigured(): boolean {

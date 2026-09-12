@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { db, type Company } from '../db';
 import { aiAvailable, askJson } from '../ai/client';
 import { researchWeb } from '../ai/websearch';
+import { safeHttpUrl } from '@/lib/safe';
 import { logAudit } from '../tracking/audit';
 
 /**
@@ -104,11 +105,12 @@ ${research.sources.map((s) => s.url).join('\n')}`,
       name: entry.name,
       industry: entry.industry || input.industry,
       location: entry.location || input.region,
-      website: entry.website || undefined,
-      careersUrl: entry.careersUrl || undefined,
+      website: safeHttpUrl(entry.website),
+      careersUrl: safeHttpUrl(entry.careersUrl),
       applicationMethod: entry.applicationMethod || undefined,
-      contactEmail: entry.contactEvidenceUrl ? entry.contactEmail || undefined : undefined,
-      contactEvidenceUrl: entry.contactEvidenceUrl || undefined,
+      // An address is only kept together with the page it was found on.
+      contactEmail: safeHttpUrl(entry.contactEvidenceUrl) ? entry.contactEmail || undefined : undefined,
+      contactEvidenceUrl: safeHttpUrl(entry.contactEvidenceUrl),
       isAgency: entry.isAgency,
       discoveredVia: `web research for ${input.profession} / ${input.industry} / ${input.region}`,
       notes: entry.note || undefined,

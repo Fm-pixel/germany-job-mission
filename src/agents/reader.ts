@@ -4,6 +4,7 @@ import { aiAvailable, askJson } from '@/services/ai/client';
 import { z } from 'zod';
 import { setStatus } from '@/services/applications';
 import { scanForScamPatterns } from '@/services/applications/scam';
+import { asUntrustedContent } from '@/lib/safe';
 import { logAudit } from '@/services/tracking/audit';
 import { emptyResult, type Agent, type AgentContext, type AgentResult } from './types';
 
@@ -87,11 +88,7 @@ export const reader: Agent = {
             ReplySchema,
             `An employer replied to an application. Explain in plain words what they want and draft a short German answer if one is needed.
 
-REPLY
-From: ${reply.from}
-"""
-${reply.body.slice(0, 8000)}
-"""`,
+${asUntrustedContent('untrusted-employer-email', `From: ${reply.from}\n\n${reply.body.slice(0, 8000)}`)}`,
             { maxTokens: 2000 },
           );
           if (understanding.intent === 'interview-invitation') {

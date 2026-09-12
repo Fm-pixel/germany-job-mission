@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { db } from '../db';
 import { aiAvailable, askJson } from '../ai/client';
+import { asUntrustedContent } from '@/lib/safe';
 import { fetchOfficialPage } from './official-sources';
 import { buildContext } from './assess';
 import { NOT_LEGAL_ADVICE } from './pathways';
@@ -63,9 +64,7 @@ export async function fetchCriteria(): Promise<StoredCriteria> {
     CriteriaSchema,
     `This is the official German government page about the Opportunity Card (Chancenkarte).
 
-"""
-${page.text.slice(0, 60000)}
-"""
+${asUntrustedContent('untrusted-official-page', page.text.slice(0, 60000))}
 
 Write down the base requirements and the points criteria EXACTLY as this page states them. Do not add criteria or points from your own knowledge. If the page does not state the number of points needed, use 0.`,
     { maxTokens: 4000 },

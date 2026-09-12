@@ -62,7 +62,7 @@ Three environment variables, for testing only. They are never set in production:
 ```
 GJM_DB_DRIVER=local-file   # data in ./.gjm-data instead of Firestore
 GJM_LOCAL_MODE=1           # the test login (refuses to work once a real service account is present)
-GJM_LOCAL_PASSWORD=...     # the password for it
+GJM_LOCAL_PASSWORD=...     # required — the test login is off without it, and has no default
 ```
 
 While either of the first two is active, a **LOCAL TEST MODE** banner is shown on every page, so it can

@@ -1,5 +1,6 @@
 import { guard } from '@/lib/api';
 import { db } from '@/services/db';
+import { safeHttpUrl } from '@/lib/safe';
 
 export async function GET() {
   return guard(async () => db.list('companies', { limit: 500 }));

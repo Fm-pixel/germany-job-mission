@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireSession, UnauthorizedError } from './auth';
+import { secretsMatch } from './safe';
 
 export async function guard<T>(handler: () => Promise<T>): Promise<NextResponse> {
   try {
@@ -28,7 +29,7 @@ export function cronAuthorised(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return false;
   const header = request.headers.get('authorization') ?? '';
-  if (header === `Bearer ${secret}`) return true;
+  if (secretsMatch(header.replace(/^Bearer /, ''), secret)) return true;
   const url = new URL(request.url);
-  return url.searchParams.get('secret') === secret;
+  return secretsMatch(url.searchParams.get('secret'), secret);
 }

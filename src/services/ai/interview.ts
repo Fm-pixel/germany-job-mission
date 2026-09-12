@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { asUntrustedContent } from '@/lib/safe';
 import { askJson } from './client';
 
 export const InterviewPackSchema = z.object({
@@ -41,7 +42,7 @@ ${input.profileText}
 
 VACANCY
 ${input.employer} — ${input.jobTitle}
-${input.jobText ? `Advert text:\n"""\n${input.jobText.slice(0, 10000)}\n"""` : 'No advert text available.'}
+${input.jobText ? asUntrustedContent('untrusted-job-advert', input.jobText.slice(0, 10000)) : 'No advert text available.'}
 
 The person's German level is ${input.germanLevel}: write the German questions at a level they can follow, and keep the vocabulary list practical.
 
