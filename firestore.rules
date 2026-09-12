@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Germany Job Mission — private single-user tool.
+// Everything is denied by default. Only the owner's authenticated UID may read
+// or write, and only when OWNER_UID below matches the account you created.
+// The server (firebase-admin) bypasses these rules; they protect against any
+// direct access from a browser or another client.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null
+        && request.auth.uid == 'REPLACE_WITH_YOUR_OWNER_UID';
+    }
+
+    match /{document=**} {
+      allow read, write: if isOwner();
+    }
+  }
+}

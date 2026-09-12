@@ -1,0 +1,33 @@
+name: Hourly agent run
+
+# Calls the app's cron route once an hour, so the agents keep working even
+# between the daily Vercel cron runs. Nothing is ever sent that your rules in
+# rules.md do not allow.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-agents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the agent runtime
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL or CRON_SECRET is not set in the repository secrets — see SETUP_FOR_ME.md step 5."
+            exit 1
+          fi
+          response=$(curl -sS -w '\n%{http_code}' -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${APP_URL%/}/api/cron/run")
+          body=$(echo "$response" | head -n -1)
+          code=$(echo "$response" | tail -n 1)
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "The agent run failed with HTTP $code"
+            exit 1
+          fi
