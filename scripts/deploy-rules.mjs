@@ -16,9 +16,10 @@ const manualInstructions = `
 Could not publish the rules automatically. Do it by hand (2 minutes):
   1. Open console.firebase.google.com and pick your project.
   2. Build -> Firestore Database -> the "Rules" tab.
-  3. Delete what is there, paste the content of firestore.rules,
-     replace REPLACE_WITH_YOUR_OWNER_UID with your user ID
-     (Authentication -> Users -> copy "User UID").
+  3. Delete what is there, paste the content of firestore.rules, and replace
+     'REPLACE_WITH_YOUR_OWNER_UID' with your user ID(s), comma separated and
+     each in quotes (Authentication -> Users -> copy "User UID" for every way
+     you sign in: email, Google, phone).
   4. Press Publish.
 `;
 
@@ -30,9 +31,14 @@ async function main() {
     process.exit(1);
   }
   const credentials = JSON.parse(raw);
-  const ownerUid = process.env.OWNER_UID;
-  if (!ownerUid) {
-    console.error('OWNER_UID is not set — the rules would lock you out.');
+  const owners = [process.env.OWNER_UIDS, process.env.OWNER_UID]
+    .filter(Boolean)
+    .join(',')
+    .split(',')
+    .map((uid) => uid.trim())
+    .filter(Boolean);
+  if (owners.length === 0) {
+    console.error('OWNER_UIDS (or OWNER_UID) is not set — the rules would lock you out.');
     console.error(manualInstructions);
     process.exit(1);
   }
@@ -40,7 +46,7 @@ async function main() {
   const rulesPath = path.join(process.cwd(), 'firestore.rules');
   const rules = fs
     .readFileSync(rulesPath, 'utf8')
-    .replace('REPLACE_WITH_YOUR_OWNER_UID', ownerUid);
+    .replace("['REPLACE_WITH_YOUR_OWNER_UID']", `[${owners.map((uid) => `'${uid}'`).join(', ')}]`);
 
   const auth = new GoogleAuth({
     credentials,
@@ -64,7 +70,7 @@ async function main() {
   });
 
   console.log(`Published firestore.rules to project ${projectId}.`);
-  console.log(`Only the user ${ownerUid} can read or write the database now.`);
+  console.log(`Only these user id(s) can read or write the database now: ${owners.join(', ')}`);
   console.log('');
   console.log('The indexes in firestore.indexes.json are not published by this script.');
   console.log('Firestore creates them on demand: when a page needs one, the server log shows a link');

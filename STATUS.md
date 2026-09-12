@@ -27,18 +27,23 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 111 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 118 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
 
-1. **Firebase project, web config and service-account JSON** — `SETUP_FOR_ME.md` step 1. Until then the
-   database and the real login show NOT CONNECTED.
+1. **Firebase (project `certifypm-pro`): the service-account key** — `SETUP_FOR_ME.md` step 1a.
+   With it, `npm run firebase:setup` registers the web app, writes the config into `.env.local` and
+   switches on Email/password and Phone sign-in. **Google sign-in has to be enabled in the console
+   once** (Firebase creates its OAuth client at that moment), and the live web address has to be added
+   under Authentication → Settings → Authorised domains.
 2. **Google Drive folder + Drive API** — step 2. Until then documents cannot be stored.
 3. **Anthropic API key** — step 3. Until then CV reading, application writing, company research, the
    Opportunity Radar research, the Chancenkarte criteria and the assistant are switched off (the pages
    say so and the rule-based parts keep working).
-4. **Vercel deployment and `OWNER_UID`** — step 4, then step 5 to publish the database rules.
+4. **Vercel deployment and `OWNER_UIDS`** — step 4, then step 5 to publish the database rules.
+   Sign in with each method once and record every user id: a phone sign-in is always a separate
+   Firebase user from the email/Google one.
 5. **`CRON_SECRET` + GitHub secrets** — step 6, for the hourly agent run.
 6. **An email provider (Resend or Gmail)** — step 7. Until then approved applications wait as
    "Approved – waiting for email connection". Gmail needs you to press "Allow" once.
@@ -81,6 +86,14 @@ Fixed:
 * The linter moved to the current ESLint configuration (`next lint` is being removed in Next.js 16).
   The stricter run found three real problems, now fixed: the company routes were not actually checking
   the evidence link, a request timer in the job source was never cleared, and two dead imports.
+
+## Firebase sign-in (asked for after the first merges)
+
+The app is wired to the project `certifypm-pro` with three ways in — email and password, Google, and a
+phone code — behind one login screen. Because a phone sign-in is a different Firebase user from an
+email or Google one, the owner is now a **list** of user ids (`OWNER_UIDS`, with the old `OWNER_UID`
+still honoured), and the Firestore rules take that list too. `npm run firebase:setup` does the parts
+that can be done through the API; what is left is named exactly, in SETUP_FOR_ME.md step 1.
 
 ## Written while waiting for the keys
 

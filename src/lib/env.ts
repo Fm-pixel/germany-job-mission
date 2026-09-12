@@ -22,6 +22,10 @@ export function firebaseWebConfigured(): boolean {
   );
 }
 
+export function firebaseProjectId(): string | undefined {
+  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() || undefined;
+}
+
 export function localModeEnabled(): boolean {
   // Test-only, and never a fallback: it needs the flag, a password you chose,
   // and the absence of a real Firebase service account.
@@ -58,6 +62,23 @@ export function anthropicModel(): string {
   return process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
 }
 
+function ownerUidList(): string[] {
+  return [process.env.OWNER_UIDS, process.env.OWNER_UID]
+    .filter((value): value is string => typeof value === 'string')
+    .join(',')
+    .split(',')
+    .map((uid) => uid.trim())
+    .filter(Boolean);
+}
+
+function ownerUidsConfigured(): boolean {
+  return ownerUidList().length > 0;
+}
+
+function ownerUidCount(): number {
+  return new Set(ownerUidList()).size;
+}
+
 export function connectionStates(): ConnectionState[] {
   const localDb = process.env.GJM_DB_DRIVER === 'local-file';
   return [
@@ -77,10 +98,19 @@ export function connectionStates(): ConnectionState[] {
       name: 'Login (Firebase Auth)',
       connected: firebaseWebConfigured(),
       detail: firebaseWebConfigured()
-        ? 'Email + password login is configured.'
+        ? `Three ways to sign in — email and password, Google, and a phone code. Project: ${firebaseProjectId()}. Each one must also be switched on in the Firebase console, and this app's web address must be on the authorised-domains list.`
         : localModeEnabled()
           ? 'LOCAL TEST LOGIN is active — this is not real authentication.'
-          : 'The NEXT_PUBLIC_FIREBASE_* values are missing.',
+          : 'The NEXT_PUBLIC_FIREBASE_* values are missing. Run npm run firebase:setup, or see SETUP_FOR_ME.md step 1.',
+      setupStep: '1',
+    },
+    {
+      key: 'owner',
+      name: 'Owner lock',
+      connected: ownerUidsConfigured(),
+      detail: ownerUidsConfigured()
+        ? `Only your own user id(s) can sign in and read the data (${ownerUidCount()} recorded).`
+        : 'OWNER_UIDS is not set yet. Until it is, sign-in is only allowed while this Firebase project has a single user. Sign in once, then add your user id.',
       setupStep: '1',
     },
     {

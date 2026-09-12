@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { adminAuth, firebaseAdminAvailable } from '@/services/firebase/admin';
 import { localModeEnabled } from './env';
+import { isOwnerUid, ownerListConfigured, ownerUids } from './owner';
 
 export const SESSION_COOKIE = 'gjm_session';
 export const LOCAL_SESSION_VALUE = 'local-test-session';
@@ -8,6 +9,9 @@ export const LOCAL_SESSION_VALUE = 'local-test-session';
 export interface Session {
   uid: string;
   email?: string;
+  phoneNumber?: string;
+  /** How this person signed in: password, google.com or phone. */
+  signInProvider?: string;
   mode: 'firebase' | 'local-test';
 }
 
@@ -26,9 +30,14 @@ export async function verifySessionValue(value: string): Promise<Session | null>
   if (!firebaseAdminAvailable()) return null;
   try {
     const decoded = await adminAuth().verifySessionCookie(value, true);
-    const ownerUid = process.env.OWNER_UID?.trim();
-    if (ownerUid && decoded.uid !== ownerUid) return null;
-    return { uid: decoded.uid, email: decoded.email, mode: 'firebase' };
+    if (!isOwnerUid(decoded.uid)) return null;
+    return {
+      uid: decoded.uid,
+      email: decoded.email,
+      phoneNumber: decoded.phone_number,
+      signInProvider: decoded.firebase?.sign_in_provider,
+      mode: 'firebase',
+    };
   } catch {
     return null;
   }
@@ -52,7 +61,9 @@ export async function requireSession(): Promise<Session> {
 /** True while no account exists yet — sign-up is only allowed in that window. */
 export async function signUpAllowed(): Promise<boolean> {
   if (!firebaseAdminAvailable()) return false;
-  if (process.env.OWNER_UID?.trim()) return false;
+  if (ownerListConfigured()) return false;
   const users = await adminAuth().listUsers(2);
   return users.users.length === 0;
 }
+
+export { ownerUids, isOwnerUid, ownerListConfigured };

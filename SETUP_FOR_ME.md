@@ -5,24 +5,76 @@ Each step ends with **how you know it worked**.
 
 ---
 
-## Step 1 — Firebase: the database and your login (15 minutes)
+## Step 1 — Firebase: the database and your login (project `certifypm-pro`)
 
-1. Open **console.firebase.google.com** and sign in with your Google account.
-2. Press **Add project**. Name it `germany-job-mission`. Switch **Google Analytics off**. Press **Create project**.
-3. In the left menu: **Build → Firestore Database → Create database**.
-   Choose **production mode** and the location **europe-west3 (Frankfurt)**. Press Enable.
-4. In the left menu: **Build → Authentication → Get started**.
-   In the list of sign-in methods click **Email/Password**, switch the first toggle on, press **Save**.
-5. Do **not** set up Storage. This tool uses your Google Drive for files instead, so no card is needed.
-6. Press the **gear icon → Project settings**. Scroll down to **Your apps**, press the **`</>`** (web) icon.
-   Name it `gjm-web`, press **Register app**. A grey box of code appears with six values
-   (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId). Copy all six — you need them below.
-7. Still in Project settings, open the tab **Service accounts** → press **Generate new private key** → **Generate key**.
-   A `.json` file downloads. Open it in a text editor and copy **the whole content**. This is a secret: never put it in a file inside the repository.
+You already have the project, so this is mostly switching things on.
 
-**How you know it worked:** the Firestore page shows an empty database and Authentication shows "Email/Password — Enabled".
+### 1a. Get the service-account key (2 minutes)
 
----
+1. Open **console.firebase.google.com** and choose the project **certifypm-pro**.
+2. Press the **gear icon → Project settings → Service accounts** tab.
+3. Press **Generate new private key → Generate key**. A `.json` file downloads.
+   This is a secret: never put it in a file inside the repository.
+
+### 1b. Let the app register itself (1 minute)
+
+With that file, one command does the rest — it registers the web app in
+`certifypm-pro` (or reuses the one that is already there), reads its config, writes it into
+`.env.local`, and switches on Email/password and Phone sign-in:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT_JSON='<paste the whole JSON here>' npm run firebase:setup
+```
+
+If it says the service account may not manage the project, open
+**console.cloud.google.com → IAM & Admin → IAM**, find the service account
+(it ends in `@certifypm-pro.iam.gserviceaccount.com`) and give it the role
+**Firebase Admin**, then run the command again.
+
+Prefer to do it by hand? Project settings → General → **Your apps** → the `</>`
+(web) icon → name it `gjm-web` → Register, then copy the six `firebaseConfig`
+values into `.env.local`.
+
+### 1c. Switch on the three ways to sign in
+
+**Authentication → Sign-in method**, in the Firebase console:
+
+| Method | What to do |
+|---|---|
+| **Email/Password** | Enable the first toggle. (The setup command does this for you.) |
+| **Google** | Enable, choose a **support email**, Save. This one must be done here — Firebase creates the Google OAuth client for you at that moment. |
+| **Phone** | Enable. (The setup command does this for you.) Free quota is small; Firebase may ask you to add billing for higher volume. |
+
+### 1d. Allow your web address
+
+**Authentication → Settings → Authorised domains → Add domain**, and add the
+address the app runs on (for example `germany-job-mission.vercel.app`).
+`localhost` is already on the list. Without this, Google and phone sign-in
+refuse to run with the error "this domain is not authorised".
+
+### 1e. Firestore
+
+**Build → Firestore Database**. If the project has no database yet, press
+**Create database**, choose **production mode** and the location
+**europe-west3 (Frankfurt)**. Do **not** set up Storage — this tool uses your
+Google Drive for files, so no card is needed.
+
+### 1f. Lock it to you (do this right after your first sign-in)
+
+1. Open the app and sign in once — with **each** method you intend to use.
+2. Firebase console → **Authentication → Users**. Copy the **User UID** of every
+   row that is you. Google and email/password usually share one row; **a phone
+   sign-in is always a separate row with its own id**.
+3. Put them all in `OWNER_UIDS`, comma separated, e.g.
+   `OWNER_UIDS=abc123...,xyz789...`
+4. Run `npm run deploy-rules` (or paste `firestore.rules` in the console and
+   replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your ids, each in quotes).
+
+Until `OWNER_UIDS` is set, the app only lets somebody in while the project has a
+single user — and the sign-in screen tells you the user id to add.
+
+**How you know it worked:** you can sign in all three ways, and the app's
+**Settings** page shows "Login (Firebase Auth) — connected" and "Owner lock — connected".
 
 ## Step 2 — Google Drive: where the documents live (5 minutes)
 
@@ -65,7 +117,7 @@ and say NOT CONNECTED.
    | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | from step 1.6 |
    | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | from step 1.6 |
    | `NEXT_PUBLIC_FIREBASE_APP_ID` | from step 1.6 |
-   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1.7, as one line |
+   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1a, as one line |
    | `GOOGLE_DRIVE_FOLDER_ID` | from step 2.4 |
    | `ANTHROPIC_API_KEY` | from step 3 |
    | `CRON_SECRET` | any long random word you invent |
@@ -75,12 +127,14 @@ and say NOT CONNECTED.
    `https://germany-job-mission.vercel.app`. Copy it.
 4. Add one more environment variable `APP_URL` with that address, and press **Redeploy**
    (Deployments → the three dots on the newest one → Redeploy).
-5. Open the address on your phone or laptop. You see the login screen.
-   Because no account exists yet, it offers **Create the first account**. Create it with your email
-   and a password of at least 8 characters. **Sign-up switches itself off afterwards.**
-6. Go back to Firebase → **Authentication → Users**, click your user, copy the **User UID**.
-   Add it in Vercel as the environment variable `OWNER_UID`, then **Redeploy** once more.
-   From now on only your account can open the app.
+5. Open the address on your phone or laptop. You see the login screen with three tabs:
+   **Email**, **Google** and **Phone**. Sign in whichever way you like — with email, the first
+   time offers **Create the first account** (sign-up switches itself off afterwards).
+6. Add that address under **Authentication → Settings → Authorised domains** in Firebase,
+   or Google and phone sign-in will refuse to run on it.
+7. Go back to Firebase → **Authentication → Users** and copy the **User UID** of every row that
+   is you. Add them in Vercel as `OWNER_UIDS` (comma separated), then **Redeploy** once more.
+   From now on only your own account(s) can open the app.
 
 **How you know it worked:** you can log in and see the dashboard "My Germany Job Mission".
 
@@ -93,13 +147,14 @@ Two ways, pick one.
 **The easy way (in the browser):**
 1. Firebase console → **Build → Firestore Database → Rules** tab.
 2. Delete everything there and paste the content of the file `firestore.rules` from the repository.
-3. Replace `REPLACE_WITH_YOUR_OWNER_UID` with your User UID from step 4.6.
+3. Replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your User UID(s) from step 4.7 — each
+   in quotes, separated by commas, e.g. `['abc123', 'xyz789']`.
 4. Press **Publish**.
 
 **The automatic way (on a computer with the repository):** set `FIREBASE_SERVICE_ACCOUNT_JSON` and
-`OWNER_UID` in `.env.local`, then run `npm run deploy-rules`.
+`OWNER_UIDS` in `.env.local`, then run `npm run deploy-rules`.
 
-**How you know it worked:** the Rules tab shows your UID inside the rules and the date of publishing.
+**How you know it worked:** the Rules tab shows your UID(s) inside the rules and the date of publishing.
 
 ---
 
