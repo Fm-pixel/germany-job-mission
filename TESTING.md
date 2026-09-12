@@ -55,6 +55,14 @@ before a real job offer; Settings shows how `rules.md` was understood and the ra
 switched off; the Opportunity Radar states its honest limits; Track B says plainly that no unskilled work
 visa exists.
 
+## Checked on a phone
+
+The owner uses this from a phone, so every page was loaded at 390 px wide and checked for horizontal
+overflow: the dashboard, "Needs you", people, jobs, applications, the review queue, companies, the
+radar, tasks, settings, a person's journey, matches and profile, and the candidate portal. None of them
+overflow. The portal also carries `noindex, nofollow` and the site disallows crawling in `robots.txt`,
+and a wrong or short portal token returns 404 on both the page and the upload endpoint.
+
 ## Local test mode
 
 Three environment variables, for testing only. They are never set in production:
