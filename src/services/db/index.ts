@@ -1,7 +1,8 @@
 import { applyQueryInMemory, type DbDriver, type ListQuery, type Where } from './driver';
 import { LocalFileDriver } from './drivers/local-file';
 import { FirestoreDriver } from './drivers/firestore';
-import { adminDb, firebaseAdminAvailable, NotConnectedError } from '../firebase/admin';
+import { NotConnectedDriver } from './drivers/not-connected';
+import { adminDb, firebaseAdminAvailable } from '../firebase/admin';
 import type { BaseDoc, CollectionName, Collections } from './types';
 
 export * from './types';
@@ -36,7 +37,9 @@ export function getDriver(): DbDriver {
     return cached;
   }
   if (!firebaseAdminAvailable()) {
-    throw new NotConnectedError('Firestore database', 'FIREBASE_SERVICE_ACCOUNT_JSON', '1');
+    // Pages keep rendering (empty, under the NOT CONNECTED banner); writes explain themselves.
+    cached = new NotConnectedDriver();
+    return cached;
   }
   cached = new FirestoreDriver(adminDb());
   return cached;

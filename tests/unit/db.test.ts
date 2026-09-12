@@ -115,3 +115,14 @@ describe('collections', () => {
     }
   });
 });
+
+describe('with no database configured', () => {
+  it('reads empty instead of crashing the page, and refuses to write', async () => {
+    const { NotConnectedDriver } = await import('@/services/db/drivers/not-connected');
+    const driver = new NotConnectedDriver();
+    expect(await driver.list()).toEqual([]);
+    expect(await driver.get()).toBeNull();
+    await expect(driver.create('candidates')).rejects.toThrow(/NOT CONNECTED/);
+    await expect(driver.remove()).rejects.toThrow(/SETUP_FOR_ME/);
+  });
+});
