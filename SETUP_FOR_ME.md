@@ -176,11 +176,23 @@ Two ways, pick one.
 
 ## Step 6 — The automatic runs (5 minutes)
 
-Vercel already runs the agents once a day (it is in `vercel.json`). For an hourly run as well:
+Vercel runs the agents once a day (it is in `vercel.json`) as soon as the app is deployed.
+
+**The hourly GitHub run is switched off on purpose while the tool is being built** — there is
+nothing deployed for it to call, so it only produced a failed run every hour. Switch it on when the
+app is live:
 
 1. GitHub → your repository → **Settings → Secrets and variables → Actions → New repository secret**.
 2. Add `APP_URL` (the Vercel address) and `CRON_SECRET` (the same random word as in step 4).
-3. GitHub → the **Actions** tab → "Hourly agent run" → **Enable workflow**.
+3. Edit `.github/workflows/agents.yml` and remove the `#` in front of these two lines:
+   ```yaml
+     # schedule:
+     #   - cron: '17 * * * *'
+   ```
+4. Commit. From then on it runs at 17 minutes past every hour.
+
+Until then you can still run it by hand whenever you want: **Actions → Hourly agent run → Run
+workflow**.
 
 **How you know it worked:** open the Actions tab an hour later — the run is green, and the app's
 **Settings → Audit log** shows what the agents did.

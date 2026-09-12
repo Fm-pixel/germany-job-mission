@@ -43,7 +43,9 @@ typecheck, tests and build.
 4. **Vercel deployment and `OWNER_UIDS`** — step 4, then step 5 to publish the database rules.
    Sign in with each method once and record every user id: a phone sign-in is always a separate
    Firebase user from the email/Google one.
-5. **`CRON_SECRET` + GitHub secrets** — step 6, for the hourly agent run.
+5. **`CRON_SECRET` + GitHub secrets** — step 6, for the hourly agent run. The hourly schedule is
+   switched off in the workflow while the tool is being built (it had nothing to call, so every run
+   failed); step 6 says which two lines to uncomment once the app is live.
 6. **An email provider (Resend or Gmail)** — step 7. Until then approved applications wait as
    "Approved – waiting for email connection". Gmail needs you to press "Allow" once.
 
