@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { db, type SourceLabel, type VisaRequirement } from '../db';
 import { aiAvailable, askJson } from '../ai/client';
+import { asUntrustedContent } from '@/lib/safe';
 import { fetchOfficialPage, SourceUnreachableError } from './official-sources';
 import { PATHWAYS } from './pathways';
 
@@ -149,9 +150,7 @@ export async function recheckPathway(pathwayKey: string): Promise<RecheckOutcome
         `Here is the text of an official German government page.
 
 PAGE: ${url}
-"""
-${page.text.slice(0, 40000)}
-"""
+${asUntrustedContent('untrusted-official-page', page.text.slice(0, 40000))}
 
 STATEMENT TO CHECK: "${requirement.text}"
 

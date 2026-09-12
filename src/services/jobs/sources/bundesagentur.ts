@@ -80,6 +80,8 @@ async function call<T>(path: string, params?: Record<string, string | number | u
       'bundesagentur',
       `the request to ${url.host} failed (${message}). If this machine has no internet access to arbeitsagentur.de, the search cannot run here.`,
     );
+  } finally {
+    clearTimeout(timer);
   }
 }
 

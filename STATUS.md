@@ -27,7 +27,7 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 76 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 86 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
@@ -53,6 +53,34 @@ NEEDS MY KEY: every item above. Nothing in the build is blocked on anything else
    and anything that fails gets fixed.
 3. Then: run "Re-check sources" once so the immigration requirements carry a real checked-on date, and
    "Re-check every programme" so the Opportunity Radar fills in its deadlines.
+
+## Security review (done after the first merge, no keys needed)
+
+Reviewed the whole app against the way it will really be used: one owner, other people's identity
+documents, a portal link that lives outside the login, and cron routes reachable from the internet.
+Fixed:
+
+* **An uploaded file could have been rendered as a page on the app's own address.** Documents are now
+  served with a safe content type, as a download unless they are a PDF, an image or plain text, with
+  `nosniff` and a locked-down content-security-policy.
+* **The test login had a default password.** It now refuses to work at all unless a password is set,
+  and the whole local mode is off without one.
+* **The cron secret was compared character by character.** It is now compared in constant time.
+* **A private portal link could have been indexed** if it ever leaked. The portal is marked noindex and
+  the whole site is disallowed in `robots.txt`.
+* **Researched links were stored as given.** Only `http(s)` links are stored or shown now, so a
+  `javascript:` link from a web page can never become a link in the app.
+* **Content from outside now looks like content, not orders.** Job adverts, employer emails and fetched
+  official pages are wrapped in an `<untrusted-...>` block, and the house rules tell the model it may
+  quote and report on them but never follow instructions inside them.
+
+## Housekeeping (done in the same session)
+
+* A start-up hook (`.claude/hooks/session-start.sh`) installs the dependencies when a session opens, so
+  the checks can run immediately. It takes effect for every session once it is on `main`.
+* The linter moved to the current ESLint configuration (`next lint` is being removed in Next.js 16).
+  The stricter run found three real problems, now fixed: the company routes were not actually checking
+  the evidence link, a request timer in the job source was never cleared, and two dead imports.
 
 ## Notes
 

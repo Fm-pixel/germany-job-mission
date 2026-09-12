@@ -1,6 +1,6 @@
 import { NotConnectedError } from '../../firebase/admin';
 import type { DbDriver } from '../driver';
-import type { BaseDoc, CollectionName } from '../types';
+import type { BaseDoc } from '../types';
 
 /**
  * Used while no database is configured. Reads come back empty so the pages
@@ -23,11 +23,11 @@ export class NotConnectedDriver implements DbDriver {
     return null;
   }
 
-  async create<T extends BaseDoc>(_collection: CollectionName): Promise<T> {
+  async create<T extends BaseDoc>(): Promise<T> {
     this.fail();
   }
 
-  async update<T extends BaseDoc>(_collection: CollectionName): Promise<T> {
+  async update<T extends BaseDoc>(): Promise<T> {
     this.fail();
   }
 

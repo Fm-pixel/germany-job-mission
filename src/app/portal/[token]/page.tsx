@@ -5,6 +5,11 @@ import { PortalClient } from './client';
 
 export const dynamic = 'force-dynamic';
 
+/** A private link must never end up in a search engine. */
+export const metadata = {
+  robots: { index: false, follow: false, nocache: true },
+};
+
 export default async function PortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const candidate = await findByPortalToken(token);

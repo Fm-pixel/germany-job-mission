@@ -122,7 +122,7 @@ describe('with no database configured', () => {
     const driver = new NotConnectedDriver();
     expect(await driver.list()).toEqual([]);
     expect(await driver.get()).toBeNull();
-    await expect(driver.create('candidates')).rejects.toThrow(/NOT CONNECTED/);
+    await expect(driver.create()).rejects.toThrow(/NOT CONNECTED/);
     await expect(driver.remove()).rejects.toThrow(/SETUP_FOR_ME/);
   });
 });

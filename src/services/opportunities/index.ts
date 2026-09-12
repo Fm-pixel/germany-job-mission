@@ -3,6 +3,7 @@ import { db, type Opportunity } from '../db';
 import { aiAvailable, askJson } from '../ai/client';
 import { researchWeb } from '../ai/websearch';
 import { candidateContext, languageOf, levelValue } from '../matching';
+import { safeHttpUrl } from '@/lib/safe';
 import { logAudit } from '../tracking/audit';
 import { SEED_OPPORTUNITIES, type SeedEntry } from './seed-list';
 
@@ -76,7 +77,7 @@ Turn this into structured data. Leave anything the page does not state empty.`,
     name: seed.name,
     type: seed.type,
     organiser: seed.organiser,
-    url: seed.url,
+    url: safeHttpUrl(seed.url) ?? seed.url,
     targetCountries: detail.targetCountries,
     requirements: detail.found ? detail.requirements : [],
     minAge: detail.minAge || undefined,

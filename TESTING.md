@@ -3,7 +3,7 @@
 Two kinds of test, both runnable without any account or key.
 
 ```bash
-npm run lint        # code style
+npm run lint        # code style (ESLint, flat config)
 npm run typecheck   # types
 npm test            # unit tests (vitest)
 npm run build       # the production build
@@ -55,6 +55,14 @@ before a real job offer; Settings shows how `rules.md` was understood and the ra
 switched off; the Opportunity Radar states its honest limits; Track B says plainly that no unskilled work
 visa exists.
 
+## Checked on a phone
+
+The owner uses this from a phone, so every page was loaded at 390 px wide and checked for horizontal
+overflow: the dashboard, "Needs you", people, jobs, applications, the review queue, companies, the
+radar, tasks, settings, a person's journey, matches and profile, and the candidate portal. None of them
+overflow. The portal also carries `noindex, nofollow` and the site disallows crawling in `robots.txt`,
+and a wrong or short portal token returns 404 on both the page and the upload endpoint.
+
 ## Local test mode
 
 Three environment variables, for testing only. They are never set in production:
@@ -62,7 +70,7 @@ Three environment variables, for testing only. They are never set in production:
 ```
 GJM_DB_DRIVER=local-file   # data in ./.gjm-data instead of Firestore
 GJM_LOCAL_MODE=1           # the test login (refuses to work once a real service account is present)
-GJM_LOCAL_PASSWORD=...     # the password for it
+GJM_LOCAL_PASSWORD=...     # required — the test login is off without it, and has no default
 ```
 
 While either of the first two is active, a **LOCAL TEST MODE** banner is shown on every page, so it can

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { db } from '../db';
 import { aiAvailable, askJson } from '../ai/client';
+import { asUntrustedContent } from '@/lib/safe';
 import { fetchOfficialPage } from './official-sources';
 import { NOT_LEGAL_ADVICE } from './pathways';
 
@@ -46,9 +47,7 @@ export async function assessRecognition(input: {
     RecognitionSchema,
     `Official page: ${PORTAL}
 
-"""
-${page.text.slice(0, 40000)}
-"""
+${asUntrustedContent('untrusted-official-page', page.text.slice(0, 40000))}
 
 Question: for the profession "${input.profession}" with the qualification "${input.qualification}" obtained in ${input.issuingCountry} — what does THIS PAGE say about whether the profession is regulated, which authority is competent, which documents are needed and how the procedure runs?
 

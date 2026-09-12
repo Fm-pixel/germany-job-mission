@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { asUntrustedContent } from '@/lib/safe';
 import { askJson } from './client';
 
 export const ApplicationDraftSchema = z.object({
@@ -62,7 +63,7 @@ Employer: ${input.employer}
 Position: ${input.jobTitle}
 Location: ${input.jobLocation ?? 'not stated'}
 Source link: ${input.jobUrl}
-${input.jobText ? `Advert text:\n"""\n${input.jobText.slice(0, 10000)}\n"""` : 'No advert text available.'}
+${input.jobText ? asUntrustedContent('untrusted-job-advert', input.jobText.slice(0, 10000)) : 'No advert text available.'}
 
 WHY THIS MATCHES (from the matching engine)
 ${input.matchReasons.map((r) => `✓ ${r}`).join('\n') || '– none recorded –'}

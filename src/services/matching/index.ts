@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { db, type Candidate, type Job, type JobMatch, type MatchExplanationItem } from '../db';
+import { db, type Job, type JobMatch, type MatchExplanationItem } from '../db';
+import { asUntrustedContent } from '@/lib/safe';
 import { aiAvailable, askJson } from '../ai/client';
 import { recommendedActionFromScore, scoreMatch, type ScoreResult } from './score';
 
@@ -66,10 +67,7 @@ Title: ${job.title}
 Employer: ${job.employer}
 Location: ${job.location ?? 'not stated'}
 Salary as advertised: ${job.salary ?? 'not stated'}
-Advert text:
-"""
-${(job.description ?? '').slice(0, 12000)}
-"""
+${asUntrustedContent('untrusted-job-advert', (job.description ?? '').slice(0, 12000))}
 
 Rule-based score already computed: ${rule.score}/100.
 ${rule.germanGap ? `The advert names German ${rule.germanGap.required}; the person has ${rule.germanGap.has}. This MUST appear as a warning.` : ''}
