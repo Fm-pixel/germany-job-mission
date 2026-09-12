@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, Empty, Field, Pill } from '@/components/ui';
+import { PortalLink } from '@/components/portal-link';
 import { db } from '@/services/db';
 import { candidateStats } from '@/services/tracking';
 import { getProfile } from '@/services/candidates';
@@ -120,6 +121,10 @@ export default async function PersonJourneyPage({ params }: { params: Promise<{ 
             })}
           </ul>
         )}
+      </Card>
+
+      <Card title="Their own private page">
+        <PortalLink candidateId={id} hasToken={Boolean(candidate.portalToken)} />
       </Card>
 
       <Card
