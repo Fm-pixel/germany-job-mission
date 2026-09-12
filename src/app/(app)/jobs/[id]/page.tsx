@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Banner, Card, Field, Pill } from '@/components/ui';
 import { db } from '@/services/db';
 import { scanForScamPatterns, SCAM_ADVICE } from '@/services/applications/scam';
+import { JobActions } from '@/components/job-actions';
 import { formatDate } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,14 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
           <Field label="German level in the advert">{job.languageRequirement ?? 'not stated'}</Field>
           <Field label="Working time">{job.workingTime ?? 'not stated'}</Field>
         </dl>
+      </Card>
+
+      <Card title="Check the source">
+        <p className="mb-3 text-sm text-slate-600">
+          A vacancy is only worth an application while it is really open. This asks the source again and stores the
+          date — the tool never claims a vacancy is live without checking.
+        </p>
+        <JobActions jobId={job.id} active={job.active} />
       </Card>
 
       <Card title="Advert text">

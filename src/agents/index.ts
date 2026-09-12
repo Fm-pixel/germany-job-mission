@@ -52,21 +52,37 @@ export interface RunSummary {
   trigger: 'cron' | 'manual';
   ran: AgentResult[];
   notDue: string[];
+  postponed: string[];
 }
+
+/**
+ * A serverless function has a time limit, so a run stops before it is killed and
+ * leaves the rest for the next one. Nothing is lost: each agent records what it
+ * did, and an agent that has not run inside its interval is due again.
+ */
+const DEFAULT_BUDGET_MS = 50_000;
 
 export async function runDueAgents(options: {
   trigger: 'cron' | 'manual';
   only?: string[];
   force?: boolean;
+  budgetMs?: number;
 }): Promise<RunSummary> {
   const startedAt = new Date().toISOString();
+  const startedMs = Date.now();
+  const budgetMs = options.budgetMs ?? DEFAULT_BUDGET_MS;
   const now = new Date();
   const policy = await getPolicy();
   const ran: AgentResult[] = [];
   const notDue: string[] = [];
+  const postponed: string[] = [];
 
   for (const agent of AGENTS) {
     if (options.only && !options.only.includes(agent.key)) continue;
+    if (Date.now() - startedMs > budgetMs) {
+      postponed.push(agent.name);
+      continue;
+    }
     if (!options.force && !(await isDue(agent, now))) {
       notDue.push(agent.name);
       continue;
@@ -88,5 +104,12 @@ export async function runDueAgents(options: {
 
   await syncTasks(policy.followUpDays);
 
-  return { startedAt, finishedAt: new Date().toISOString(), trigger: options.trigger, ran, notDue };
+  return {
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    trigger: options.trigger,
+    ran,
+    notDue,
+    postponed,
+  };
 }

@@ -4,6 +4,7 @@ import { Card, Field, Pill } from '@/components/ui';
 import { db, APPLICATION_STATUSES } from '@/services/db';
 import { formatDateTime } from '@/lib/format';
 import { StatusChanger } from './status-changer';
+import { FollowUpButton } from '@/components/followup-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,9 @@ export default async function ApplicationPage({ params }: { params: Promise<{ id
               <Field label="Reply">{formatDateTime(application.replyAt)}</Field>
               <Field label="Follow-ups sent">{application.followUpCount}</Field>
             </dl>
+            <div className="border-t border-slate-100 pt-3">
+              <FollowUpButton applicationId={id} count={application.followUpCount} />
+            </div>
           </div>
         </Card>
 

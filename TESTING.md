@@ -38,6 +38,9 @@ npm run build
 npm run e2e
 ```
 
+Always build first: the click-through starts its own server against `.next`, and a server left over
+from an earlier build serves file names that no longer exist.
+
 If your machine has a prepared Chromium instead of Playwright's own download:
 
 ```bash

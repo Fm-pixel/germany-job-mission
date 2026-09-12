@@ -20,7 +20,9 @@ export default defineConfig({
   webServer: {
     command: `npm run start -- --port ${PORT}`,
     url: `http://localhost:${PORT}/login`,
-    reuseExistingServer: !process.env.CI,
+    // Always start a fresh server: a server left over from an earlier build
+    // serves chunk names that no longer exist, which looks like an app crash.
+    reuseExistingServer: false,
     timeout: 120_000,
     env: {
       GJM_DB_DRIVER: 'local-file',

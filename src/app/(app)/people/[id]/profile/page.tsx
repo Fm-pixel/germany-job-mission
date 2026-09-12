@@ -1,3 +1,5 @@
+import { Card } from '@/components/ui';
+import { DeletePerson } from '@/components/danger-zone';
 import { db } from '@/services/db';
 import { getProfile } from '@/services/candidates';
 import { ProfileEditor } from './editor';
@@ -17,7 +19,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   if (!candidate) return null;
 
   return (
-    <ProfileEditor
+    <div className="space-y-6">
+      <ProfileEditor
       candidateId={id}
       initial={{
         candidate,
@@ -27,6 +30,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
         qualifications,
         workExperience,
       }}
-    />
+      />
+      <Card title="Delete this person">
+        <DeletePerson candidateId={id} name={candidate.name} />
+      </Card>
+    </div>
   );
 }

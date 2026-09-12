@@ -3,7 +3,9 @@ import { cronAuthorised, errorResponse } from '@/lib/api';
 import { runDueAgents } from '@/agents';
 import { sendDailySummary, sendWeeklyReport } from '@/services/notify';
 
-export const maxDuration = 300;
+// Vercel's free Hobby plan allows 60 seconds per function. The agent runtime
+// stops before that and leaves the rest for the next run, so nothing is lost.
+export const maxDuration = 60;
 
 /** The single cron entry point. Vercel Cron (daily) and GitHub Actions (hourly) both call it. */
 export async function GET(request: Request) {

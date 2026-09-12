@@ -65,6 +65,10 @@ async function main() {
 
   console.log(`Published firestore.rules to project ${projectId}.`);
   console.log(`Only the user ${ownerUid} can read or write the database now.`);
+  console.log('');
+  console.log('The indexes in firestore.indexes.json are not published by this script.');
+  console.log('Firestore creates them on demand: when a page needs one, the server log shows a link');
+  console.log('that creates it in one click. Or run "firebase deploy --only firestore:indexes".');
 }
 
 main().catch((err) => {

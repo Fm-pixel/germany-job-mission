@@ -190,3 +190,19 @@ describe('today’s priorities', () => {
     expect(priorities.some((item) => item.key === `nocv-${candidate.id}`)).toBe(true);
   });
 });
+
+describe('the agent runtime', () => {
+  it('stops within its time budget and postpones the rest', async () => {
+    const { runDueAgents } = await import('@/agents');
+    const summary = await runDueAgents({ trigger: 'manual', force: true, budgetMs: 0 });
+    expect(summary.ran).toHaveLength(0);
+    expect(summary.postponed.length).toBe(9);
+    expect(summary.trigger).toBe('manual');
+  });
+
+  it('runs only the agents it is asked for', async () => {
+    const { runDueAgents } = await import('@/agents');
+    const summary = await runDueAgents({ trigger: 'manual', force: true, only: ['matcher'] });
+    expect(summary.ran.map((r) => r.agent)).toEqual(['Matcher']);
+  });
+});

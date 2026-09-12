@@ -3,6 +3,7 @@ import { db } from '@/services/db';
 import { suggestIndustries } from '@/services/companies';
 import { aiAvailable } from '@/services/ai/client';
 import { CompanyPanel } from './panel';
+import { SpeculativeApplication } from '@/components/speculative';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,17 @@ export default async function CompaniesPage() {
           candidates={candidates.map((c) => ({ id: c.id, name: c.name, profession: c.profession }))}
           suggestions={professions.length > 0 ? suggestIndustries(professions[0]) : suggestIndustries('')}
           aiConnected={aiAvailable()}
+        />
+      </Card>
+
+      <Card title="Speculative application (Initiativbewerbung)">
+        <p className="mb-3 text-sm text-slate-600">
+          For a company that fits but is not advertising. It goes through the same review queue — nothing is sent
+          without your approval, and recruiters and agencies are refused.
+        </p>
+        <SpeculativeApplication
+          companies={companies.map((c) => ({ id: c.id, name: c.name, isAgency: c.isAgency }))}
+          candidates={candidates.map((c) => ({ id: c.id, name: c.name }))}
         />
       </Card>
 
