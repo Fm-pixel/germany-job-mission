@@ -1,0 +1,104 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import type { z } from 'zod';
+import { anthropicConfigured, anthropicModel } from '@/lib/env';
+
+export class AiNotConnectedError extends Error {
+  readonly code = 'AI_NOT_CONNECTED';
+  constructor() {
+    super(
+      'The Anthropic API is NOT CONNECTED — ANTHROPIC_API_KEY is missing. See SETUP_FOR_ME.md step 3.',
+    );
+    this.name = 'AiNotConnectedError';
+  }
+}
+
+let cached: Anthropic | null = null;
+
+export function aiAvailable(): boolean {
+  return anthropicConfigured();
+}
+
+export function anthropic(): Anthropic {
+  if (!anthropicConfigured()) throw new AiNotConnectedError();
+  if (!cached) cached = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return cached;
+}
+
+/**
+ * The rules from CLAUDE.md, given to every single AI call.
+ * They are the app's safety floor, not a suggestion.
+ */
+export const HOUSE_RULES = `You are part of a private tool that helps specific individuals find a real job in Germany and then follow the correct legal immigration path.
+
+Absolute rules:
+- Never invent facts about a person, a job, a company or a contact. If something is unknown, say "Needs confirmation" or write [NEEDS INFO: what is missing].
+- Never invent vacancies, companies, contact details, salaries or requirements.
+- Never promise or imply that a visa or a job is guaranteed.
+- Never give legal advice. Where a legal question arises, say the authority or a lawyer must confirm it.
+- Never suggest illegal immigration, false statements or fake documents.
+- Immigration facts may only come from official German sources that are given to you in the prompt. Do not add remembered numbers or thresholds.
+- Be concrete, honest and short. Warnings are never hidden to make a match look better.`;
+
+export interface TextOptions {
+  system?: string;
+  maxTokens?: number;
+  thinking?: boolean;
+}
+
+export async function askText(prompt: string, options: TextOptions = {}): Promise<string> {
+  const client = anthropic();
+  const response = await client.messages.create({
+    model: anthropicModel(),
+    max_tokens: options.maxTokens ?? 8000,
+    system: [
+      { type: 'text' as const, text: HOUSE_RULES, cache_control: { type: 'ephemeral' as const } },
+      ...(options.system ? [{ type: 'text' as const, text: options.system }] : []),
+    ],
+    ...(options.thinking ? { thinking: { type: 'adaptive' as const } } : {}),
+    messages: [{ role: 'user', content: prompt }],
+  });
+  return response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('\n')
+    .trim();
+}
+
+export type UserContent = string | Anthropic.ContentBlockParam[];
+
+/**
+ * Structured extraction. The answer is validated against the Zod schema, so a
+ * malformed answer is an error and never becomes silent wrong data.
+ */
+export async function askJson<T extends z.ZodType>(
+  schema: T,
+  content: UserContent,
+  options: TextOptions = {},
+): Promise<z.infer<T>> {
+  const client = anthropic();
+  const response = await client.messages.parse({
+    model: anthropicModel(),
+    max_tokens: options.maxTokens ?? 8000,
+    system: [
+      { type: 'text' as const, text: HOUSE_RULES, cache_control: { type: 'ephemeral' as const } },
+      ...(options.system ? [{ type: 'text' as const, text: options.system }] : []),
+    ],
+    messages: [{ role: 'user', content }],
+    output_config: { format: zodOutputFormat(schema) },
+  });
+  const parsed = response.parsed_output;
+  if (!parsed) throw new Error('The AI answer did not match the expected structure.');
+  return parsed as z.infer<T>;
+}
+
+export function pdfBlock(body: Buffer): Anthropic.ContentBlockParam {
+  return {
+    type: 'document',
+    source: { type: 'base64', media_type: 'application/pdf', data: body.toString('base64') },
+  };
+}
+
+export function textBlock(text: string): Anthropic.ContentBlockParam {
+  return { type: 'text', text };
+}
