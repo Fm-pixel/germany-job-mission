@@ -331,6 +331,7 @@ export interface VisaPathway extends BaseDoc {
 
 export interface VisaRequirement extends BaseDoc {
   pathwayKey: string;
+  requirementKey?: string;
   text: string;
   label: SourceLabel;
   sourceUrl: string;
