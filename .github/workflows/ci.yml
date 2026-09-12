@@ -1,9 +1,15 @@
 name: CI
 
+# A pull request already runs this, so pushes only trigger it on main —
+# otherwise every push to a branch with an open PR runs the checks twice.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
