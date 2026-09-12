@@ -27,16 +27,15 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 118 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 121 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
 
-1. **Firebase (project `certifypm-pro`): the service-account key** — `SETUP_FOR_ME.md` step 1a.
-   With it, `npm run firebase:setup` registers the web app, writes the config into `.env.local` and
-   switches on Email/password and Phone sign-in. **Google sign-in has to be enabled in the console
-   once** (Firebase creates its OAuth client at that moment), and the live web address has to be added
-   under Authentication → Settings → Authorised domains.
+1. **Firebase (project `certifypm-pro`)** — the web app config is in the code and was checked
+   against the live project: email/password sign-in is already on. Still yours to do
+   (`SETUP_FOR_ME.md` step 1): enable **Google** and **Phone** sign-in in the console, add the live
+   Vercel address to the authorised domains, and download the **service-account key** for the server.
 2. **Google Drive folder + Drive API** — step 2. Until then documents cannot be stored.
 3. **Anthropic API key** — step 3. Until then CV reading, application writing, company research, the
    Opportunity Radar research, the Chancenkarte criteria and the assistant are switched off (the pages
@@ -88,6 +87,14 @@ Fixed:
   the evidence link, a request timer in the job source was never cleared, and two dead imports.
 
 ## Firebase sign-in (asked for after the first merges)
+
+Checked against the live project with the web key: email/password is on, and the authorised domains
+are localhost, certifypm-pro.firebaseapp.com, certifypm-pro.web.app, databutton.com and
+certifypm_pro.databutton.app — so **this Firebase project already serves another application**.
+Two things follow, both handled: every Firestore collection this tool writes is prefixed `gjm_` so the
+two apps cannot share a collection, and `OWNER_UIDS` is effectively required here, because a project
+with other people's accounts must not let them into this tool.
+
 
 The app is wired to the project `certifypm-pro` with three ways in — email and password, Google, and a
 phone code — behind one login screen. Because a phone sign-in is a different Firebase user from an

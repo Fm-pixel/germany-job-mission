@@ -18,10 +18,10 @@ export default async function LoginPage() {
           <p className="mt-2 text-sm text-slate-400">Private tool. One account: yours.</p>
         </div>
         <div className="card card-pad">
-          {configured ? (
-            <LoginForm canSignUp={canSignUp} />
-          ) : localModeEnabled() ? (
+          {localModeEnabled() ? (
             <LocalLogin />
+          ) : configured ? (
+            <LoginForm canSignUp={canSignUp} />
           ) : (
             <div className="text-sm text-slate-700">
               <p className="font-semibold text-amber-700">Login is NOT CONNECTED.</p>

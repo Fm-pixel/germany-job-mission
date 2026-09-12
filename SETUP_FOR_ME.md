@@ -7,74 +7,94 @@ Each step ends with **how you know it worked**.
 
 ## Step 1 — Firebase: the database and your login (project `certifypm-pro`)
 
-You already have the project, so this is mostly switching things on.
+**The web app is already registered and its config is already in the code**
+(`src/lib/firebase-config.ts`). Those six values are public identifiers, not
+secrets — they ship inside the JavaScript every visitor downloads, and Google
+documents them as safe to expose. What protects your data is the login plus the
+database rules below.
 
-### 1a. Get the service-account key (2 minutes)
+I checked your project directly. What is already true:
 
-1. Open **console.firebase.google.com** and choose the project **certifypm-pro**.
-2. Press the **gear icon → Project settings → Service accounts** tab.
-3. Press **Generate new private key → Generate key**. A `.json` file downloads.
-   This is a secret: never put it in a file inside the repository.
+* ✅ **Email/password sign-in is switched on.**
+* ✅ Authorised domains include `localhost`, `certifypm-pro.firebaseapp.com`
+  and `certifypm-pro.web.app`.
+* ⚠️ **This project is already used by another app** — `databutton.com` and
+  `certifypm_pro.databutton.app` are on the authorised list. See 1d.
 
-### 1b. Let the app register itself (1 minute)
+### 1a. Switch on Google and Phone sign-in (3 minutes)
 
-With that file, one command does the rest — it registers the web app in
-`certifypm-pro` (or reuses the one that is already there), reads its config, writes it into
-`.env.local`, and switches on Email/password and Phone sign-in:
-
-```bash
-FIREBASE_SERVICE_ACCOUNT_JSON='<paste the whole JSON here>' npm run firebase:setup
-```
-
-If it says the service account may not manage the project, open
-**console.cloud.google.com → IAM & Admin → IAM**, find the service account
-(it ends in `@certifypm-pro.iam.gserviceaccount.com`) and give it the role
-**Firebase Admin**, then run the command again.
-
-Prefer to do it by hand? Project settings → General → **Your apps** → the `</>`
-(web) icon → name it `gjm-web` → Register, then copy the six `firebaseConfig`
-values into `.env.local`.
-
-### 1c. Switch on the three ways to sign in
-
-**Authentication → Sign-in method**, in the Firebase console:
+Firebase console → **certifypm-pro** → **Authentication → Sign-in method**:
 
 | Method | What to do |
 |---|---|
-| **Email/Password** | Enable the first toggle. (The setup command does this for you.) |
-| **Google** | Enable, choose a **support email**, Save. This one must be done here — Firebase creates the Google OAuth client for you at that moment. |
-| **Phone** | Enable. (The setup command does this for you.) Free quota is small; Firebase may ask you to add billing for higher volume. |
+| **Google** | Enable → choose a **support email** → Save. This has to happen here: it is the moment Firebase creates the Google OAuth client. |
+| **Phone** | Enable. The free SMS quota is small; Firebase will ask for billing if you need more. |
 
-### 1d. Allow your web address
+### 1b. Add your live web address (1 minute)
 
 **Authentication → Settings → Authorised domains → Add domain**, and add the
-address the app runs on (for example `germany-job-mission.vercel.app`).
-`localhost` is already on the list. Without this, Google and phone sign-in
-refuse to run with the error "this domain is not authorised".
+address Vercel gives you (for example `germany-job-mission.vercel.app`).
+
+Without this, Google and phone sign-in fail on the live site with "this domain
+is not authorised" — `localhost` works, the real address does not, which is a
+confusing way to find out.
+
+### 1c. The service-account key (2 minutes)
+
+The server needs it to read and write the database and your Drive folder.
+
+1. Console → gear icon → **Project settings → Service accounts**.
+2. **Generate new private key → Generate key**. A `.json` file downloads.
+3. This one **is** a secret. It goes into Vercel as `FIREBASE_SERVICE_ACCOUNT_JSON`
+   (step 4), never into a file in the repository.
+
+Optional check, if you have the repository on a computer:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT_JSON='<paste the whole JSON>' npm run firebase:setup
+```
+
+It confirms the web app, writes the config into `.env.local`, and switches on
+Email/password and Phone for you.
+
+### 1d. Because the project is shared with another app
+
+`certifypm-pro` already serves something else (Databutton). Two consequences,
+both handled, but you should know about them:
+
+* **The data is kept apart.** Every collection this tool writes is named
+  `gjm_…` (`gjm_candidates`, `gjm_jobs`, …), so it cannot mix with the other
+  app's data. To change that, set `FIRESTORE_COLLECTION_PREFIX`.
+* **`OWNER_UIDS` is not optional here.** If the project already has user
+  accounts from the other app, this tool refuses every sign-in until you tell
+  it which user id is yours (1f). That is deliberate: without it, anyone with
+  an account in that project could open your tool.
 
 ### 1e. Firestore
 
-**Build → Firestore Database**. If the project has no database yet, press
-**Create database**, choose **production mode** and the location
-**europe-west3 (Frankfurt)**. Do **not** set up Storage — this tool uses your
-Google Drive for files, so no card is needed.
+**Build → Firestore Database**. If there is no database yet, **Create database**
+→ **production mode** → location **europe-west3 (Frankfurt)**. Do **not** set up
+Storage — this tool uses your Google Drive for files, so no card is needed.
 
-### 1f. Lock it to you (do this right after your first sign-in)
+### 1f. Lock it to you (right after your first sign-in)
 
-1. Open the app and sign in once — with **each** method you intend to use.
-2. Firebase console → **Authentication → Users**. Copy the **User UID** of every
-   row that is you. Google and email/password usually share one row; **a phone
-   sign-in is always a separate row with its own id**.
-3. Put them all in `OWNER_UIDS`, comma separated, e.g.
+1. Open the app and sign in **once with each method you want to use**.
+2. Console → **Authentication → Users**. Copy the **User UID** of every row that
+   is you. Google and email/password normally share one row; **a phone sign-in
+   is always its own row with its own id**.
+3. Put them all in `OWNER_UIDS`, comma separated:
    `OWNER_UIDS=abc123...,xyz789...`
-4. Run `npm run deploy-rules` (or paste `firestore.rules` in the console and
-   replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your ids, each in quotes).
+4. Run `npm run deploy-rules` — or paste `firestore.rules` in the console and
+   replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your ids, each in quotes.
 
-Until `OWNER_UIDS` is set, the app only lets somebody in while the project has a
-single user — and the sign-in screen tells you the user id to add.
+If a sign-in is refused, the screen shows you the exact user id to add.
 
-**How you know it worked:** you can sign in all three ways, and the app's
-**Settings** page shows "Login (Firebase Auth) — connected" and "Owner lock — connected".
+**Optional, recommended:** restrict the web API key so it only works from your
+own address — console.cloud.google.com → **APIs & Services → Credentials** →
+the browser key → **Website restrictions**.
+
+**How you know it worked:** you can sign in all three ways, and **Settings**
+shows "Login (Firebase Auth) — connected" and "Owner lock — connected".
 
 ## Step 2 — Google Drive: where the documents live (5 minutes)
 
@@ -107,17 +127,13 @@ and say NOT CONNECTED.
 1. Open **vercel.com**, sign in with GitHub, press **Add New → Project** and import the repository
    `germany-job-mission`.
 2. **Before** pressing Deploy, open **Environment Variables** and add these, one per line
-   (names exactly as written):
+   (names exactly as written). The six `NEXT_PUBLIC_FIREBASE_*` values are **not** needed —
+   they are already in the code:
 
    | Name | Value |
    |---|---|
-   | `NEXT_PUBLIC_FIREBASE_API_KEY` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | from step 1.6 |
-   | `NEXT_PUBLIC_FIREBASE_APP_ID` | from step 1.6 |
-   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1a, as one line |
+   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1c, as one line |
+   | `OWNER_UIDS` | left empty for now — you fill it in after your first sign-in (step 1f) |
    | `GOOGLE_DRIVE_FOLDER_ID` | from step 2.4 |
    | `ANTHROPIC_API_KEY` | from step 3 |
    | `CRON_SECRET` | any long random word you invent |

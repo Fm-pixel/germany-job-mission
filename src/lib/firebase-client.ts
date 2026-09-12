@@ -12,22 +12,12 @@ import {
   type UserCredential,
 } from 'firebase/auth';
 
-/**
- * The Firebase web app config. These six values are public by design — they
- * identify the project, they are not secrets. What protects the data is
- * Firebase Auth plus the Firestore rules, not hiding these.
- */
-const config = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+import { firebaseWebConfig, firebaseWebConfigComplete } from './firebase-config';
+
+const config = firebaseWebConfig;
 
 export function firebaseConfigured(): boolean {
-  return Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
+  return firebaseWebConfigComplete();
 }
 
 export function firebaseProjectId(): string | undefined {

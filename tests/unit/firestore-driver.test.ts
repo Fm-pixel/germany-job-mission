@@ -143,3 +143,29 @@ describe('the Firestore driver', () => {
     expect(data.jobs.j1).toBeUndefined();
   });
 });
+
+describe('keeping this tool apart from the other app in the same project', () => {
+  it('prefixes every collection it touches', async () => {
+    const { firestore, calls, data } = fakeFirestore();
+    const driver = new FirestoreDriver(firestore, 'gjm_');
+
+    const created = await driver.create('candidates', { name: 'Jean' } as never);
+    await driver.get('candidates', created.id);
+    await driver.update('candidates', created.id, { name: 'Jean B' } as never);
+    await driver.list('jobs', { where: [{ field: 'active', op: '==', value: true }] });
+    await driver.remove('candidates', created.id);
+
+    expect(calls.filter((call) => call.startsWith('collection(')).every((call) => call.includes('gjm_'))).toBe(
+      true,
+    );
+    expect(Object.keys(data)).toEqual(['gjm_candidates']);
+    expect(Object.keys(data)).not.toContain('candidates');
+  });
+
+  it('writes plain collection names when the prefix is switched off', async () => {
+    const { firestore, data } = fakeFirestore();
+    const driver = new FirestoreDriver(firestore, '');
+    await driver.create('candidates', { name: 'Jean' } as never);
+    expect(Object.keys(data)).toEqual(['candidates']);
+  });
+});

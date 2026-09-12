@@ -1,3 +1,5 @@
+import { firebaseWebConfig, firebaseWebConfigComplete } from './firebase-config';
+
 /** Central place that answers "is this connected?" — used by the UI banners. */
 
 export interface ConnectionState {
@@ -14,16 +16,11 @@ function has(name: string): boolean {
 }
 
 export function firebaseWebConfigured(): boolean {
-  return (
-    has('NEXT_PUBLIC_FIREBASE_API_KEY') &&
-    has('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN') &&
-    has('NEXT_PUBLIC_FIREBASE_PROJECT_ID') &&
-    has('NEXT_PUBLIC_FIREBASE_APP_ID')
-  );
+  return firebaseWebConfigComplete();
 }
 
 export function firebaseProjectId(): string | undefined {
-  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() || undefined;
+  return firebaseWebConfig.projectId || undefined;
 }
 
 export function localModeEnabled(): boolean {

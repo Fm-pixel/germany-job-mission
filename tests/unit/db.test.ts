@@ -126,3 +126,22 @@ describe('with no database configured', () => {
     await expect(driver.remove()).rejects.toThrow(/SETUP_FOR_ME/);
   });
 });
+
+describe('the collection prefix', () => {
+  it('defaults to gjm_ and can be switched off', async () => {
+    const { collectionPrefix } = await import('@/services/db');
+    const original = process.env.FIRESTORE_COLLECTION_PREFIX;
+
+    delete process.env.FIRESTORE_COLLECTION_PREFIX;
+    expect(collectionPrefix()).toBe('gjm_');
+
+    process.env.FIRESTORE_COLLECTION_PREFIX = '';
+    expect(collectionPrefix()).toBe('');
+
+    process.env.FIRESTORE_COLLECTION_PREFIX = 'mission_';
+    expect(collectionPrefix()).toBe('mission_');
+
+    if (original === undefined) delete process.env.FIRESTORE_COLLECTION_PREFIX;
+    else process.env.FIRESTORE_COLLECTION_PREFIX = original;
+  });
+});
