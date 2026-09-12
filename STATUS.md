@@ -30,19 +30,31 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 Tests: 129 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
+## Connected and verified (tested against the live project, not assumed)
+
+* **Firestore** — the app's own data layer created, read, listed and deleted a record in
+  `gjm_candidates`. Works.
+* **Database rules** — published and verified live: `allow read, write: if false`. No browser can
+  touch the data; only this app's server, through the Admin SDK. The previous rules let **any**
+  signed-in account read and write everything, which with open sign-up meant anyone at all.
+* **Firebase Auth** — one account, `arbeithilfede@gmail.com` / `CfWDd73AMaYe1dFR9AjiUUcPWVJ3`,
+  recorded as the owner.
+* **Drive API** — enabled, the service account authenticates.
+* **Anthropic API** — the key authenticates, but the account has no credit, so AI calls are refused.
+
 ## Blocked on me (only you can do these)
 
 1. **Firebase (project `certifypm-pro`)** — the web app config is in the code and was checked
    against the live project: email/password sign-in is already on. Still yours to do
    (`SETUP_FOR_ME.md` step 1): enable **Google** and **Phone** sign-in in the console, add the live
    Vercel address to the authorised domains, and download the **service-account key** for the server.
-2. **Google Drive folder + Drive API** — step 2. The folder ID is known and kept in `.env.local`
-   only (never in the repository, per rule 8). Still yours: enable the Drive API, and share the folder
-   with the service-account email as Editor. "Test the Drive connection" on the Settings page then
+2. **Share the Drive folder** — step 2. Tested live: the Drive API is on and the service account
+   works, but it can see **zero files**, so the folder is not shared with it yet. Open the folder →
+   Share → `firebase-adminsdk-fbsvc@certifypm-pro.iam.gserviceaccount.com` → **Editor**. "Test the Drive connection" on the Settings page then
    both proves it works and warns if the folder is readable by anyone with the link.
-3. **Anthropic API key** — step 3. Until then CV reading, application writing, company research, the
-   Opportunity Radar research, the Chancenkarte criteria and the assistant are switched off (the pages
-   say so and the rule-based parts keep working).
+3. **Anthropic credit** — step 3. The key works; the account balance is zero, so every AI call comes
+   back refused. Add credit at console.anthropic.com → Plans & Billing. This is the only part that
+   costs money, so it waits for you.
 4. **Vercel deployment and `OWNER_UIDS`** — step 4, then step 5 to publish the database rules.
    Sign in with each method once and record every user id: a phone sign-in is always a separate
    Firebase user from the email/Google one.

@@ -76,16 +76,27 @@ both handled, but you should know about them:
 → **production mode** → location **europe-west3 (Frankfurt)**. Do **not** set up
 Storage — this tool uses your Google Drive for files, so no card is needed.
 
-### 1f. Lock it to you (right after your first sign-in)
+### 1f. ✅ Already done — the database is locked
 
-1. Open the app and sign in **once with each method you want to use**.
+Published and verified on your project: **no browser can read or write the
+database at all**, including anyone who signs up. That is stronger than the
+usual "only my user id" rule and costs nothing here, because this app never
+touches Firestore from the browser — every read and write goes through its own
+server. Who may *use the app* is decided separately, by `OWNER_UIDS`.
+
+Your account `arbeithilfede@gmail.com` (`CfWDd73AMaYe1dFR9AjiUUcPWVJ3`) is the
+owner. Put that id in `OWNER_UIDS` in Vercel (step 4).
+
+### 1g. If you ever need to redo the lock
+
+1. Sign in **once with each method you want to use** (email, Google, phone).
 2. Console → **Authentication → Users**. Copy the **User UID** of every row that
    is you. Google and email/password normally share one row; **a phone sign-in
    is always its own row with its own id**.
-3. Put them all in `OWNER_UIDS`, comma separated:
-   `OWNER_UIDS=abc123...,xyz789...`
-4. Run `npm run deploy-rules` — or paste `firestore.rules` in the console and
-   replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your ids, each in quotes.
+3. Add them to `OWNER_UIDS`, comma separated:
+   `OWNER_UIDS=CfWDd73AMaYe1dFR9AjiUUcPWVJ3,the-phone-one`
+4. `npm run deploy-rules` re-publishes the database lock (it does not need the
+   ids — the lock is "no browser at all").
 
 If a sign-in is refused, the screen shows you the exact user id to add.
 
@@ -127,10 +138,20 @@ reads who the folder is shared with and warns you in red if it is open to
 anyone with the link, or shared with a whole organisation, or with a crowd of
 people.
 
-## Step 3 — Anthropic key: the thinking part (3 minutes)
+## Step 3 — Anthropic: the thinking part
 
-1. Open **console.anthropic.com → API keys → Create key**. Copy it (it starts with `sk-ant-`).
-2. You need a small amount of credit on the account for the tool to use it.
+The key you gave me **works** — it authenticates fine. But the account has **no
+credit**, so every AI call is refused:
+
+> Your credit balance is too low to access the Anthropic API.
+
+**What to do:** console.anthropic.com → **Plans & Billing** → add credit. This
+is the one part of the setup that costs money, so it is your decision, not mine.
+
+Until there is credit, the app tells you so in plain words and keeps working:
+job search, matching scores, the tracker, the checklists and the Opportunity
+Radar are all unaffected. What pauses is CV reading, writing applications,
+company research and the assistant.
 
 **How you know it worked:** on the Settings page, "AI (Anthropic API)" shows **connected**.
 Without it the app still runs — CV reading, application writing and the assistant are simply switched off

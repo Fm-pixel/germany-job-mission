@@ -16,10 +16,7 @@ const manualInstructions = `
 Could not publish the rules automatically. Do it by hand (2 minutes):
   1. Open console.firebase.google.com and pick your project.
   2. Build -> Firestore Database -> the "Rules" tab.
-  3. Delete what is there, paste the content of firestore.rules, and replace
-     'REPLACE_WITH_YOUR_OWNER_UID' with your user ID(s), comma separated and
-     each in quotes (Authentication -> Users -> copy "User UID" for every way
-     you sign in: email, Google, phone).
+  3. Delete what is there and paste the content of firestore.rules exactly as it is.
   4. Press Publish.
 `;
 
@@ -31,22 +28,8 @@ async function main() {
     process.exit(1);
   }
   const credentials = JSON.parse(raw);
-  const owners = [process.env.OWNER_UIDS, process.env.OWNER_UID]
-    .filter(Boolean)
-    .join(',')
-    .split(',')
-    .map((uid) => uid.trim())
-    .filter(Boolean);
-  if (owners.length === 0) {
-    console.error('OWNER_UIDS (or OWNER_UID) is not set — the rules would lock you out.');
-    console.error(manualInstructions);
-    process.exit(1);
-  }
-
   const rulesPath = path.join(process.cwd(), 'firestore.rules');
-  const rules = fs
-    .readFileSync(rulesPath, 'utf8')
-    .replace("['REPLACE_WITH_YOUR_OWNER_UID']", `[${owners.map((uid) => `'${uid}'`).join(', ')}]`);
+  const rules = fs.readFileSync(rulesPath, 'utf8');
 
   const auth = new GoogleAuth({
     credentials,
@@ -63,14 +46,16 @@ async function main() {
   });
   const rulesetName = ruleset.data.name;
 
+  const releaseName = `projects/${projectId}/releases/cloud.firestore`;
   await client.request({
     url: `${base}/releases/cloud.firestore`,
     method: 'PATCH',
-    data: { release: { name: `${base}/releases/cloud.firestore`, rulesetName } },
+    data: { release: { name: releaseName, rulesetName } },
   });
 
   console.log(`Published firestore.rules to project ${projectId}.`);
-  console.log(`Only these user id(s) can read or write the database now: ${owners.join(', ')}`);
+  console.log('No browser can read or write this database any more — only the app\'s own server,');
+  console.log('through the Admin SDK. Who may use the app is decided by OWNER_UIDS.');
   console.log('');
   console.log('The indexes in firestore.indexes.json are not published by this script.');
   console.log('Firestore creates them on demand: when a page needs one, the server log shows a link');
