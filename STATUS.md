@@ -27,7 +27,7 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 121 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 125 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
 
 ## Blocked on me (only you can do these)
@@ -36,7 +36,10 @@ typecheck, tests and build.
    against the live project: email/password sign-in is already on. Still yours to do
    (`SETUP_FOR_ME.md` step 1): enable **Google** and **Phone** sign-in in the console, add the live
    Vercel address to the authorised domains, and download the **service-account key** for the server.
-2. **Google Drive folder + Drive API** — step 2. Until then documents cannot be stored.
+2. **Google Drive folder + Drive API** — step 2. The folder ID is known and kept in `.env.local`
+   only (never in the repository, per rule 8). Still yours: enable the Drive API, and share the folder
+   with the service-account email as Editor. "Test the Drive connection" on the Settings page then
+   both proves it works and warns if the folder is readable by anyone with the link.
 3. **Anthropic API key** — step 3. Until then CV reading, application writing, company research, the
    Opportunity Radar research, the Chancenkarte criteria and the assistant are switched off (the pages
    say so and the rule-based parts keep working).

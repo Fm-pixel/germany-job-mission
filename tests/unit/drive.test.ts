@@ -100,3 +100,49 @@ describe('uploading a document', () => {
     ).rejects.toThrow(/did not return a file ID/);
   });
 });
+
+describe('who can see the documents folder', () => {
+  it('calls out "anyone with the link" — the setting that would expose passports', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing([
+      { type: 'user', role: 'owner', emailAddress: 'me@example.com' },
+      { type: 'anyone', role: 'reader' },
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].level).toBe('danger');
+    expect(warnings[0].text).toMatch(/anyone with the link/i);
+  });
+
+  it('calls out a whole-organisation share', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing([{ type: 'domain', role: 'reader' }]);
+    expect(warnings[0].level).toBe('danger');
+  });
+
+  it('is quiet about the normal setup: me plus the service account', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings, sharedWith } = describeSharing([
+      { type: 'user', role: 'owner', emailAddress: 'me@example.com' },
+      {
+        type: 'user',
+        role: 'writer',
+        emailAddress: 'firebase-adminsdk-x@certifypm-pro.iam.gserviceaccount.com',
+      },
+    ]);
+    expect(warnings).toEqual([]);
+    expect(sharedWith).toHaveLength(2);
+  });
+
+  it('mentions it when a crowd can read the candidates’ documents', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing([
+      { type: 'user', role: 'owner', emailAddress: 'me@example.com' },
+      { type: 'user', role: 'writer', emailAddress: 'a@example.com' },
+      { type: 'user', role: 'reader', emailAddress: 'b@example.com' },
+      { type: 'user', role: 'reader', emailAddress: 'c@example.com' },
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].level).toBe('warning');
+    expect(warnings[0].text).toMatch(/4 people/);
+  });
+});

@@ -25,7 +25,7 @@ They cover the parts where a mistake would hurt a real person:
 | `agents.test.ts` | The automatic-send rails: threshold, daily cap, review-first count, scam flags, missing facts, paused people. |
 | `safe.test.ts` | How an uploaded file is served, that only http(s) links are kept, the constant-time secret check, and the untrusted-content wrapper. |
 | `firestore-driver.test.ts` | The real database driver, against a fake Firestore: generated ids, merge-on-update, no id inside the document, `undefined` dropped, filters and limits passed through. |
-| `drive.test.ts` | The private Drive folder: reuse an existing folder, create it in the right parent, escape a quote in a name (so "O'Brien" does not get a new folder every time), and fail loudly when Drive returns no id. |
+| `drive.test.ts` | The private Drive folder: reuse an existing folder, create it in the right parent, escape a quote in a name (so "O'Brien" does not get a new folder every time), fail loudly when Drive returns no id, and read the folder's sharing so an "anyone with the link" folder full of passports is called out in red. |
 | `mime.test.ts` | The message Gmail actually sends: German subjects and bodies survive, attachments are separated and labelled, no header injection, no over-long lines. |
 | `owner.test.ts` | Who may sign in: the owner is a list of Firebase user ids (one way in per id), the old single `OWNER_UID` still works, and nothing is recorded means "only while the project has one user". |
 | `phone.test.ts` | The phone number people type: international form accepted with spaces and dashes, a local number refused before Firebase ever sees it. |

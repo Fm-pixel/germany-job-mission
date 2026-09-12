@@ -96,20 +96,30 @@ the browser key → **Website restrictions**.
 **How you know it worked:** you can sign in all three ways, and **Settings**
 shows "Login (Firebase Auth) — connected" and "Owner lock — connected".
 
-## Step 2 — Google Drive: where the documents live (5 minutes)
+## Step 2 — Google Drive: where the documents live
 
-1. Open **console.cloud.google.com**, top left choose the project **germany-job-mission**.
-2. **APIs & Services → Library**, search for **Google Drive API**, open it, press **Enable**.
-3. Open **drive.google.com**. Press **New → New folder**, call it `Germany Job Mission – Documents`.
-4. Open the folder. Look at the address bar: the long code after `folders/` is the **folder ID**. Copy it.
-5. Press the folder name at the top → **Share**. Paste the `client_email` value from the JSON of step 1
-   (it looks like `firebase-adminsdk-xxxxx@germany-job-mission.iam.gserviceaccount.com`),
-   set it to **Editor**, press **Send**.
+You have already made the folder and sent me its link, so its ID is in place
+here. Two things are left, and they both need the service-account key from step 1c.
 
-**How you know it worked:** after the app is running, open **Settings → "Test the Drive connection"**.
-It must say "Connected to the Drive folder …".
+1. **Turn on the Drive API.** console.cloud.google.com → pick the project
+   **certifypm-pro** → **APIs & Services → Library** → search **Google Drive API**
+   → **Enable**.
+2. **Share the folder with the service account.** Open the folder in Drive →
+   the folder name at the top → **Share** → paste the `client_email` from the
+   service-account JSON (it ends in `@certifypm-pro.iam.gserviceaccount.com`) →
+   set it to **Editor** → Send. Without this the app can see nothing.
+3. **Add the folder ID to Vercel** as `GOOGLE_DRIVE_FOLDER_ID` (step 4). It is
+   deliberately not written into any file in the repository.
 
----
+**Check the sharing yourself, once.** This folder will hold passport scans,
+diplomas and contracts belonging to other people. In Drive, open **Share** and
+make sure the top of the box says **Restricted** — *not* "Anyone with the link".
+
+**How you know it worked:** on the app's **Settings** page press **Test the
+Drive connection**. It must say `Connected to the Drive folder "…"`. It also
+reads who the folder is shared with and warns you in red if it is open to
+anyone with the link, or shared with a whole organisation, or with a crowd of
+people.
 
 ## Step 3 — Anthropic key: the thinking part (3 minutes)
 
