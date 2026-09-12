@@ -110,6 +110,26 @@ export async function deleteFile(fileId: string): Promise<void> {
   await driveClient().files.delete({ fileId, supportsAllDrives: true });
 }
 
+/**
+ * The address the app acts as. It comes from the service-account key once that
+ * is configured; before then, GOOGLE_SERVICE_ACCOUNT_EMAIL lets the app say
+ * exactly which address the Drive folder has to be shared with.
+ */
+export function serviceAccountEmail(): string | undefined {
+  return readServiceAccount()?.client_email || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || undefined;
+}
+
+/** True when this permission is the service account, with write access. */
+function isServiceAccountEditor(
+  permission: { role?: string | null; emailAddress?: string | null },
+  email: string,
+): boolean {
+  return (
+    permission.emailAddress?.toLowerCase() === email.toLowerCase() &&
+    ['writer', 'owner', 'fileOrganizer', 'organizer'].includes(permission.role ?? '')
+  );
+}
+
 export interface SharingWarning {
   level: 'danger' | 'warning';
   text: string;
@@ -124,9 +144,22 @@ export interface SharingWarning {
  */
 export function describeSharing(
   permissions: { type?: string | null; role?: string | null; emailAddress?: string | null }[],
+  expectedServiceAccount?: string,
 ): { warnings: SharingWarning[]; sharedWith: string[] } {
   const warnings: SharingWarning[] = [];
   const sharedWith: string[] = [];
+
+  if (expectedServiceAccount) {
+    const present = permissions.some((permission) =>
+      isServiceAccountEditor(permission, expectedServiceAccount),
+    );
+    if (!present) {
+      warnings.push({
+        level: 'danger',
+        text: `The folder is not shared with ${expectedServiceAccount} as an Editor, so this app cannot put anything in it. Open the folder in Drive → Share → paste that address → set it to Editor → Send.`,
+      });
+    }
+  }
 
   for (const permission of permissions) {
     if (permission.type === 'anyone') {
@@ -176,7 +209,7 @@ export async function checkDriveConnection(): Promise<{
       fields: 'id,name,permissions(type,role,emailAddress)',
       supportsAllDrives: true,
     });
-    const sharing = describeSharing(res.data.permissions ?? []);
+    const sharing = describeSharing(res.data.permissions ?? [], serviceAccountEmail());
     return {
       ok: true,
       message: `Connected to the Drive folder "${res.data.name}".`,

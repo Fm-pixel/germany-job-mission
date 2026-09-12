@@ -146,3 +146,49 @@ describe('who can see the documents folder', () => {
     expect(warnings[0].text).toMatch(/4 people/);
   });
 });
+
+describe('is the folder actually shared with the app?', () => {
+  const SERVICE_ACCOUNT = 'firebase-adminsdk-fbsvc@certifypm-pro.iam.gserviceaccount.com';
+
+  it('says exactly what to do when the folder is not shared with it', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing(
+      [{ type: 'user', role: 'owner', emailAddress: 'me@example.com' }],
+      SERVICE_ACCOUNT,
+    );
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].level).toBe('danger');
+    expect(warnings[0].text).toContain(SERVICE_ACCOUNT);
+    expect(warnings[0].text).toMatch(/Share/);
+  });
+
+  it('is quiet when it is shared as Editor', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing(
+      [
+        { type: 'user', role: 'owner', emailAddress: 'me@example.com' },
+        { type: 'user', role: 'writer', emailAddress: SERVICE_ACCOUNT },
+      ],
+      SERVICE_ACCOUNT,
+    );
+    expect(warnings).toEqual([]);
+  });
+
+  it('is not fooled by read-only access, which cannot upload', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing(
+      [{ type: 'user', role: 'reader', emailAddress: SERVICE_ACCOUNT }],
+      SERVICE_ACCOUNT,
+    );
+    expect(warnings[0].text).toContain('not shared');
+  });
+
+  it('ignores letter case in the address', async () => {
+    const { describeSharing } = await import('@/services/documents/drive');
+    const { warnings } = describeSharing(
+      [{ type: 'user', role: 'writer', emailAddress: SERVICE_ACCOUNT.toUpperCase() }],
+      SERVICE_ACCOUNT,
+    );
+    expect(warnings).toEqual([]);
+  });
+});

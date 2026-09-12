@@ -105,9 +105,15 @@ here. Two things are left, and they both need the service-account key from step 
    **certifypm-pro** → **APIs & Services → Library** → search **Google Drive API**
    → **Enable**.
 2. **Share the folder with the service account.** Open the folder in Drive →
-   the folder name at the top → **Share** → paste the `client_email` from the
-   service-account JSON (it ends in `@certifypm-pro.iam.gserviceaccount.com`) →
-   set it to **Editor** → Send. Without this the app can see nothing.
+   the folder name at the top → **Share** → paste this address:
+
+   ```
+   firebase-adminsdk-fbsvc@certifypm-pro.iam.gserviceaccount.com
+   ```
+
+   → set it to **Editor** → Send. Without this the app can see nothing in the
+   folder: the link on its own gives it no access. **Editor, not Viewer** — it
+   has to be able to put files in.
 3. **Add the folder ID to Vercel** as `GOOGLE_DRIVE_FOLDER_ID` (step 4). It is
    deliberately not written into any file in the repository.
 
