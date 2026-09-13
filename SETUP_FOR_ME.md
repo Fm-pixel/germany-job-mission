@@ -185,10 +185,25 @@ without needing to sign in, so a wrong variable cannot leave you locked out
 guessing. `readyToUse: true` means the database and the owner lock are in place.
 
 One trap worth knowing: **`FIREBASE_SERVICE_ACCOUNT_JSON` is easy to paste
-wrongly.** In the Vercel form, paste the raw file contents with no quotes around
-them. If you ever put it in a `.env` file instead, wrap it in **single** quotes —
-double quotes make the tooling mangle the private key inside, and the app then
-says the key is set but unreadable.
+wrongly.** The downloaded file is spread over many lines and contains quotes,
+braces and backslashes, and forms tend to mangle at least one of them.
+
+**The reliable way: paste it base64-encoded instead.** Base64 turns the whole
+file into one long line of plain letters and digits — nothing a form can break.
+The app detects it and decodes it by itself, so no other setting changes.
+
+To produce it, on a computer with the repository:
+
+```bash
+base64 -w0 < path/to/the-key.json      # macOS: base64 -i path/to/the-key.json
+```
+
+Paste that single line as the value. Both shapes work — the raw JSON and the
+base64 — so if a deployment ever says the key is set but unreadable, switching
+to base64 is the fix.
+
+If you ever put the key in a `.env` file instead, wrap it in **single** quotes:
+double quotes make the tooling mangle the private key inside.
 
 ## Step 4 — Put it online with Vercel (10 minutes)
 
@@ -200,7 +215,7 @@ says the key is set but unreadable.
 
    | Name | Value |
    |---|---|
-   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1c, as one line |
+   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the key from step 1c — base64-encoded is safest, see the note above |
    | `OWNER_UIDS` | left empty for now — you fill it in after your first sign-in (step 1f) |
    | `GOOGLE_DRIVE_FOLDER_ID` | from step 2.4 |
    | `ANTHROPIC_API_KEY` | from step 3 |

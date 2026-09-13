@@ -158,3 +158,19 @@ connected. Drive still answers "File not found" — that is the folder share, no
 The key lives only in `.env.local`, which git ignores; nothing secret is in any tracked file. The copy
 in Vercel has to be replaced by hand, and the old key deleted in the Firebase console, or the old one
 stays valid.
+
+## Google Drive is connected (13 September)
+
+The owner shared the folder, and the service account now reaches it. Checked directly:
+
+* folder — "Germany Job Mission – Documents", owned by the owner's own account
+* shared with exactly two: the owner (owner) and the service account (writer). No link sharing, no
+  domain sharing, nobody else.
+* write test — created a temporary folder inside it and removed it again, so uploads will work.
+
+The same run confirmed the base64 shape of `FIREBASE_SERVICE_ACCOUNT_JSON` is accepted end to end, which
+is what SETUP_FOR_ME.md now recommends for the Vercel form: the raw file spans many lines and web forms
+mangle it, base64 is one unbreakable line, and the parser already decodes it.
+
+Health now reads: Firestore OK, Drive OK, AI key present, owner lock OK. Only email sending is still
+"not connected", which is the intended state — nothing sends without an approval.
