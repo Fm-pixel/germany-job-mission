@@ -135,3 +135,15 @@ file (`src/services/email/mime.ts`), and the Drive helpers now accept a client s
 * No immigration threshold, amount, points table or language level is written into the code from memory.
   Those values only ever appear after "Re-check sources" has really read the official page, and they are
   stored with that page's URL and the date.
+
+## The live deployment answered (13 September)
+
+The address `https://germany-job-mission.vercel.app/login` returned the login screen and the sign-in
+attempt reached Firebase, which refused it with `auth/unauthorized-domain`. That is three separate
+things confirmed at once: the deployment is live, the Firebase variables reached it, and the login
+screen's plain-language error handling works — the sentence shown is this app's own wording for that
+Firebase code, not a crash.
+
+Nothing to fix in the code. What is left is one click in the Firebase console: add the host name
+`germany-job-mission.vercel.app` under **Authentication → Settings → Authorised domains**. SETUP_FOR_ME.md
+step 1b now names that exact address instead of calling it an example.

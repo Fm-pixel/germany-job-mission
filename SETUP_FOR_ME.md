@@ -30,14 +30,27 @@ Firebase console → **certifypm-pro** → **Authentication → Sign-in method**
 | **Google** | Enable → choose a **support email** → Save. This has to happen here: it is the moment Firebase creates the Google OAuth client. |
 | **Phone** | Enable. The free SMS quota is small; Firebase will ask for billing if you need more. |
 
-### 1b. Add your live web address (1 minute)
+### 1b. Add your live web address (1 minute) — **this is the one blocking you now**
 
-**Authentication → Settings → Authorised domains → Add domain**, and add the
-address Vercel gives you (for example `germany-job-mission.vercel.app`).
+Your live address is **`germany-job-mission.vercel.app`**.
 
-Without this, Google and phone sign-in fail on the live site with "this domain
-is not authorised" — `localhost` works, the real address does not, which is a
-confusing way to find out.
+**Authentication → Settings → Authorised domains → Add domain** → type
+
+```
+germany-job-mission.vercel.app
+```
+
+→ **Add**.
+
+Type the bare address only: no `https://`, no `/login`, no slash at the end.
+Firebase stores a host name, and it rejects anything longer.
+
+Until this is done the live site answers every sign-in attempt with *"This web
+address is not on the Firebase list of authorised domains"* — `localhost`
+works, the real address does not, which is a confusing way to find out.
+
+You know it worked when the new domain appears in the list and
+<https://germany-job-mission.vercel.app/login> stops showing that sentence.
 
 ### 1c. The service-account key (2 minutes)
 
