@@ -147,3 +147,14 @@ Firebase code, not a crash.
 Nothing to fix in the code. What is left is one click in the Firebase console: add the host name
 `germany-job-mission.vercel.app` under **Authentication → Settings → Authorised domains**. SETUP_FOR_ME.md
 step 1b now names that exact address instead of calling it an example.
+
+## Service-account key rotated (13 September)
+
+The old key (`c5be578b1b…`) had passed through a chat transcript, so it was replaced with a freshly
+generated one (`8c7ac8a9ac…`). Verified against the live project with the new key in place: minting an
+access token works, Firestore reads work, and the app's own `/api/health` reports the database
+connected. Drive still answers "File not found" — that is the folder share, not the key.
+
+The key lives only in `.env.local`, which git ignores; nothing secret is in any tracked file. The copy
+in Vercel has to be replaced by hand, and the old key deleted in the Firebase console, or the old one
+stays valid.
