@@ -159,6 +159,24 @@ and say NOT CONNECTED.
 
 ---
 
+## Did the deployment work? (one address, no sign-in needed)
+
+Once it is live, open:
+
+```
+https://<your app address>/api/health?secret=<your CRON_SECRET>
+```
+
+It lists every connection and what is wrong with the ones that are not working —
+without needing to sign in, so a wrong variable cannot leave you locked out
+guessing. `readyToUse: true` means the database and the owner lock are in place.
+
+One trap worth knowing: **`FIREBASE_SERVICE_ACCOUNT_JSON` is easy to paste
+wrongly.** In the Vercel form, paste the raw file contents with no quotes around
+them. If you ever put it in a `.env` file instead, wrap it in **single** quotes —
+double quotes make the tooling mangle the private key inside, and the app then
+says the key is set but unreadable.
+
 ## Step 4 — Put it online with Vercel (10 minutes)
 
 1. Open **vercel.com**, sign in with GitHub, press **Add New → Project** and import the repository
