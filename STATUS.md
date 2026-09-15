@@ -174,3 +174,19 @@ mangle it, base64 is one unbreakable line, and the parser already decodes it.
 
 Health now reads: Firestore OK, Drive OK, AI key present, owner lock OK. Only email sending is still
 "not connected", which is the intended state — nothing sends without an approval.
+
+## Every timer is off (15 September)
+
+The owner asked whether anything still runs on a schedule. Three things did, and all three are now
+off:
+
+* **Vercel `crons`** — a daily 06:00 UTC and a weekly Monday 07:00 UTC call to `/api/cron/run` were
+  declared in `vercel.json` and became live the moment PR #4 merged to `main`. Removed. They were
+  harmless while `CRON_SECRET` is unset (`cronAuthorised` returns false with no secret, so the route
+  answers 401), but the setup document asks the owner to set that secret — which would have armed
+  them without anyone intending it.
+* **The hourly GitHub workflow** — already commented out, still commented out.
+* **The assistant's own hourly PR check-in** — deleted; the account now lists no scheduled tasks.
+
+SETUP_FOR_ME.md step 6 now states plainly that nothing is scheduled, and carries the exact JSON to
+paste back when the schedules should return.

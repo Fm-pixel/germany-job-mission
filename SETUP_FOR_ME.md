@@ -259,11 +259,32 @@ Two ways, pick one.
 
 ## Step 6 — The automatic runs (5 minutes)
 
-Vercel runs the agents once a day (it is in `vercel.json`) as soon as the app is deployed.
+**Nothing runs on a timer at the moment. That is deliberate, while the tool is still being built.**
+All three schedules are switched off:
 
-**The hourly GitHub run is switched off on purpose while the tool is being built** — there is
-nothing deployed for it to call, so it only produced a failed run every hour. Switch it on when the
-app is live:
+| What | Was | Now |
+|---|---|---|
+| Vercel — daily summary | every day 06:00 UTC | removed from `vercel.json` |
+| Vercel — weekly summary | Mondays 07:00 UTC | removed from `vercel.json` |
+| GitHub — hourly agent run | 17 past every hour | commented out in `.github/workflows/agents.yml` |
+
+To switch the two Vercel ones back on, put this block back into `vercel.json`, next to
+`"framework": "nextjs"`:
+
+```json
+  "crons": [
+    { "path": "/api/cron/run?notify=daily",  "schedule": "0 6 * * *" },
+    { "path": "/api/cron/run?notify=weekly", "schedule": "0 7 * * 1" }
+  ]
+```
+
+(Vercel's free plan allows daily schedules only, so the weekly one may need a paid plan.)
+
+Whether they are on or off, a run is refused unless `CRON_SECRET` is set — so setting that secret is
+what actually arms them. You can always run the agents by hand instead: **Actions → Hourly agent run
+→ Run workflow**.
+
+To switch the hourly GitHub run on when the app is live:
 
 1. GitHub → your repository → **Settings → Secrets and variables → Actions → New repository secret**.
 2. Add `APP_URL` (the Vercel address) and `CRON_SECRET` (the same random word as in step 4).
