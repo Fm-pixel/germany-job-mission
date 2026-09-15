@@ -2,26 +2,23 @@ rules_version = '2';
 
 // Germany Job Mission — private single-user tool.
 //
-// Everything is denied by default. Only the owner's own Firebase user id(s)
-// may read or write. There is more than one id because there is more than one
-// way to sign in: Google and email/password share an id when the address
-// matches, but a phone sign-in is always a separate user.
+// NOBODY reaches this data from a browser. Not you, not another app in this
+// Firebase project, not a stranger who signs up.
 //
-// Put every id you sign in with in the list below — the same ones as OWNER_UIDS
-// in the environment. `npm run deploy-rules` fills them in for you.
+// That is deliberate and it is the strongest setting available here: this app
+// never uses the Firestore client SDK. Every read and write goes through its
+// own server, which uses the Firebase Admin SDK — and the Admin SDK bypasses
+// these rules entirely. So denying every client request costs the app nothing
+// and removes the whole class of "somebody signed up and read everything".
+//
+// Who may use the app is decided in front of the database instead: Firebase
+// Auth plus OWNER_UIDS, checked on the server for every single request.
+//
+// Publish with: npm run deploy-rules
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function ownerUids() {
-      return ['REPLACE_WITH_YOUR_OWNER_UID'];
-    }
-
-    function isOwner() {
-      return request.auth != null && request.auth.uid in ownerUids();
-    }
-
     match /{document=**} {
-      allow read, write: if isOwner();
+      allow read, write: if false;
     }
   }
 }

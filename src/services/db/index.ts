@@ -38,11 +38,16 @@ export function dbStatus(): { connected: boolean; driver: string; label: string;
       label: prefix ? `Firestore (collections named ${prefix}…)` : 'Firestore',
     };
   }
+  // "Set but unreadable" is a different problem from "missing", and the fix is
+  // different too — saying the wrong one sends you looking in the wrong place.
+  const present = (process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? '').trim() !== '';
   return {
     connected: false,
     driver: 'none',
     label: 'DATABASE NOT CONNECTED',
-    reason: 'FIREBASE_SERVICE_ACCOUNT_JSON is not set on the server.',
+    reason: present
+      ? 'FIREBASE_SERVICE_ACCOUNT_JSON is set, but it could not be read as the service-account key. Paste the whole key file, unchanged. In a .env file wrap it in SINGLE quotes — double quotes make the tooling mangle the private key.'
+      : 'FIREBASE_SERVICE_ACCOUNT_JSON is not set on the server.',
   };
 }
 

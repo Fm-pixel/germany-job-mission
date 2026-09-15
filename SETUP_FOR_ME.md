@@ -30,14 +30,27 @@ Firebase console → **certifypm-pro** → **Authentication → Sign-in method**
 | **Google** | Enable → choose a **support email** → Save. This has to happen here: it is the moment Firebase creates the Google OAuth client. |
 | **Phone** | Enable. The free SMS quota is small; Firebase will ask for billing if you need more. |
 
-### 1b. Add your live web address (1 minute)
+### 1b. Add your live web address (1 minute) — **this is the one blocking you now**
 
-**Authentication → Settings → Authorised domains → Add domain**, and add the
-address Vercel gives you (for example `germany-job-mission.vercel.app`).
+Your live address is **`germany-job-mission.vercel.app`**.
 
-Without this, Google and phone sign-in fail on the live site with "this domain
-is not authorised" — `localhost` works, the real address does not, which is a
-confusing way to find out.
+**Authentication → Settings → Authorised domains → Add domain** → type
+
+```
+germany-job-mission.vercel.app
+```
+
+→ **Add**.
+
+Type the bare address only: no `https://`, no `/login`, no slash at the end.
+Firebase stores a host name, and it rejects anything longer.
+
+Until this is done the live site answers every sign-in attempt with *"This web
+address is not on the Firebase list of authorised domains"* — `localhost`
+works, the real address does not, which is a confusing way to find out.
+
+You know it worked when the new domain appears in the list and
+<https://germany-job-mission.vercel.app/login> stops showing that sentence.
 
 ### 1c. The service-account key (2 minutes)
 
@@ -76,16 +89,27 @@ both handled, but you should know about them:
 → **production mode** → location **europe-west3 (Frankfurt)**. Do **not** set up
 Storage — this tool uses your Google Drive for files, so no card is needed.
 
-### 1f. Lock it to you (right after your first sign-in)
+### 1f. ✅ Already done — the database is locked
 
-1. Open the app and sign in **once with each method you want to use**.
+Published and verified on your project: **no browser can read or write the
+database at all**, including anyone who signs up. That is stronger than the
+usual "only my user id" rule and costs nothing here, because this app never
+touches Firestore from the browser — every read and write goes through its own
+server. Who may *use the app* is decided separately, by `OWNER_UIDS`.
+
+Your account `arbeithilfede@gmail.com` (`CfWDd73AMaYe1dFR9AjiUUcPWVJ3`) is the
+owner. Put that id in `OWNER_UIDS` in Vercel (step 4).
+
+### 1g. If you ever need to redo the lock
+
+1. Sign in **once with each method you want to use** (email, Google, phone).
 2. Console → **Authentication → Users**. Copy the **User UID** of every row that
    is you. Google and email/password normally share one row; **a phone sign-in
    is always its own row with its own id**.
-3. Put them all in `OWNER_UIDS`, comma separated:
-   `OWNER_UIDS=abc123...,xyz789...`
-4. Run `npm run deploy-rules` — or paste `firestore.rules` in the console and
-   replace `'REPLACE_WITH_YOUR_OWNER_UID'` with your ids, each in quotes.
+3. Add them to `OWNER_UIDS`, comma separated:
+   `OWNER_UIDS=CfWDd73AMaYe1dFR9AjiUUcPWVJ3,the-phone-one`
+4. `npm run deploy-rules` re-publishes the database lock (it does not need the
+   ids — the lock is "no browser at all").
 
 If a sign-in is refused, the screen shows you the exact user id to add.
 
@@ -96,31 +120,90 @@ the browser key → **Website restrictions**.
 **How you know it worked:** you can sign in all three ways, and **Settings**
 shows "Login (Firebase Auth) — connected" and "Owner lock — connected".
 
-## Step 2 — Google Drive: where the documents live (5 minutes)
+## Step 2 — Google Drive: where the documents live
 
-1. Open **console.cloud.google.com**, top left choose the project **germany-job-mission**.
-2. **APIs & Services → Library**, search for **Google Drive API**, open it, press **Enable**.
-3. Open **drive.google.com**. Press **New → New folder**, call it `Germany Job Mission – Documents`.
-4. Open the folder. Look at the address bar: the long code after `folders/` is the **folder ID**. Copy it.
-5. Press the folder name at the top → **Share**. Paste the `client_email` value from the JSON of step 1
-   (it looks like `firebase-adminsdk-xxxxx@germany-job-mission.iam.gserviceaccount.com`),
-   set it to **Editor**, press **Send**.
+You have already made the folder and sent me its link, so its ID is in place
+here. Two things are left, and they both need the service-account key from step 1c.
 
-**How you know it worked:** after the app is running, open **Settings → "Test the Drive connection"**.
-It must say "Connected to the Drive folder …".
+1. **Turn on the Drive API.** console.cloud.google.com → pick the project
+   **certifypm-pro** → **APIs & Services → Library** → search **Google Drive API**
+   → **Enable**.
+2. **Share the folder with the service account.** Open the folder in Drive →
+   the folder name at the top → **Share** → paste this address:
 
----
+   ```
+   firebase-adminsdk-fbsvc@certifypm-pro.iam.gserviceaccount.com
+   ```
 
-## Step 3 — Anthropic key: the thinking part (3 minutes)
+   → set it to **Editor** → Send. Without this the app can see nothing in the
+   folder: the link on its own gives it no access. **Editor, not Viewer** — it
+   has to be able to put files in.
+3. **Add the folder ID to Vercel** as `GOOGLE_DRIVE_FOLDER_ID` (step 4). It is
+   deliberately not written into any file in the repository.
 
-1. Open **console.anthropic.com → API keys → Create key**. Copy it (it starts with `sk-ant-`).
-2. You need a small amount of credit on the account for the tool to use it.
+**Check the sharing yourself, once.** This folder will hold passport scans,
+diplomas and contracts belonging to other people. In Drive, open **Share** and
+make sure the top of the box says **Restricted** — *not* "Anyone with the link".
+
+**How you know it worked:** on the app's **Settings** page press **Test the
+Drive connection**. It must say `Connected to the Drive folder "…"`. It also
+reads who the folder is shared with and warns you in red if it is open to
+anyone with the link, or shared with a whole organisation, or with a crowd of
+people.
+
+## Step 3 — Anthropic: the thinking part
+
+The key you gave me **works** — it authenticates fine. But the account has **no
+credit**, so every AI call is refused:
+
+> Your credit balance is too low to access the Anthropic API.
+
+**What to do:** console.anthropic.com → **Plans & Billing** → add credit. This
+is the one part of the setup that costs money, so it is your decision, not mine.
+
+Until there is credit, the app tells you so in plain words and keeps working:
+job search, matching scores, the tracker, the checklists and the Opportunity
+Radar are all unaffected. What pauses is CV reading, writing applications,
+company research and the assistant.
 
 **How you know it worked:** on the Settings page, "AI (Anthropic API)" shows **connected**.
 Without it the app still runs — CV reading, application writing and the assistant are simply switched off
 and say NOT CONNECTED.
 
 ---
+
+## Did the deployment work? (one address, no sign-in needed)
+
+Once it is live, open:
+
+```
+https://<your app address>/api/health?secret=<your CRON_SECRET>
+```
+
+It lists every connection and what is wrong with the ones that are not working —
+without needing to sign in, so a wrong variable cannot leave you locked out
+guessing. `readyToUse: true` means the database and the owner lock are in place.
+
+One trap worth knowing: **`FIREBASE_SERVICE_ACCOUNT_JSON` is easy to paste
+wrongly.** The downloaded file is spread over many lines and contains quotes,
+braces and backslashes, and forms tend to mangle at least one of them.
+
+**The reliable way: paste it base64-encoded instead.** Base64 turns the whole
+file into one long line of plain letters and digits — nothing a form can break.
+The app detects it and decodes it by itself, so no other setting changes.
+
+To produce it, on a computer with the repository:
+
+```bash
+base64 -w0 < path/to/the-key.json      # macOS: base64 -i path/to/the-key.json
+```
+
+Paste that single line as the value. Both shapes work — the raw JSON and the
+base64 — so if a deployment ever says the key is set but unreadable, switching
+to base64 is the fix.
+
+If you ever put the key in a `.env` file instead, wrap it in **single** quotes:
+double quotes make the tooling mangle the private key inside.
 
 ## Step 4 — Put it online with Vercel (10 minutes)
 
@@ -132,7 +215,7 @@ and say NOT CONNECTED.
 
    | Name | Value |
    |---|---|
-   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole JSON from step 1c, as one line |
+   | `FIREBASE_SERVICE_ACCOUNT_JSON` | the key from step 1c — base64-encoded is safest, see the note above |
    | `OWNER_UIDS` | left empty for now — you fill it in after your first sign-in (step 1f) |
    | `GOOGLE_DRIVE_FOLDER_ID` | from step 2.4 |
    | `ANTHROPIC_API_KEY` | from step 3 |

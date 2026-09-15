@@ -110,8 +110,92 @@ export async function deleteFile(fileId: string): Promise<void> {
   await driveClient().files.delete({ fileId, supportsAllDrives: true });
 }
 
+/**
+ * The address the app acts as. It comes from the service-account key once that
+ * is configured; before then, GOOGLE_SERVICE_ACCOUNT_EMAIL lets the app say
+ * exactly which address the Drive folder has to be shared with.
+ */
+export function serviceAccountEmail(): string | undefined {
+  return readServiceAccount()?.client_email || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || undefined;
+}
+
+/** True when this permission is the service account, with write access. */
+function isServiceAccountEditor(
+  permission: { role?: string | null; emailAddress?: string | null },
+  email: string,
+): boolean {
+  return (
+    permission.emailAddress?.toLowerCase() === email.toLowerCase() &&
+    ['writer', 'owner', 'fileOrganizer', 'organizer'].includes(permission.role ?? '')
+  );
+}
+
+export interface SharingWarning {
+  level: 'danger' | 'warning';
+  text: string;
+}
+
+/**
+ * Reads a Drive permission list and says what is wrong with it.
+ *
+ * This folder holds passports, diplomas and contracts belonging to other
+ * people. "Anyone with the link" is the setting that quietly makes all of that
+ * public, so it is called out loudly rather than mentioned.
+ */
+export function describeSharing(
+  permissions: { type?: string | null; role?: string | null; emailAddress?: string | null }[],
+  expectedServiceAccount?: string,
+): { warnings: SharingWarning[]; sharedWith: string[] } {
+  const warnings: SharingWarning[] = [];
+  const sharedWith: string[] = [];
+
+  if (expectedServiceAccount) {
+    const present = permissions.some((permission) =>
+      isServiceAccountEditor(permission, expectedServiceAccount),
+    );
+    if (!present) {
+      warnings.push({
+        level: 'danger',
+        text: `The folder is not shared with ${expectedServiceAccount} as an Editor, so this app cannot put anything in it. Open the folder in Drive → Share → paste that address → set it to Editor → Send.`,
+      });
+    }
+  }
+
+  for (const permission of permissions) {
+    if (permission.type === 'anyone') {
+      warnings.push({
+        level: 'danger',
+        text: 'This folder is set to "anyone with the link". Everything in it — passports, certificates, contracts — can be opened by anybody who ever sees the address. Change it to "Restricted" in Drive.',
+      });
+      continue;
+    }
+    if (permission.type === 'domain') {
+      warnings.push({
+        level: 'danger',
+        text: 'This folder is shared with a whole organisation. Share it only with yourself and the service account.',
+      });
+      continue;
+    }
+    if (permission.emailAddress) sharedWith.push(`${permission.emailAddress} (${permission.role ?? 'unknown role'})`);
+  }
+
+  const people = sharedWith.filter((entry) => !entry.includes('gserviceaccount.com'));
+  if (people.length > 2) {
+    warnings.push({
+      level: 'warning',
+      text: `This folder is shared with ${people.length} people. Everyone on that list can read the candidates' documents.`,
+    });
+  }
+  return { warnings, sharedWith };
+}
+
 /** Used by the Settings page to prove the connection really works. */
-export async function checkDriveConnection(): Promise<{ ok: boolean; message: string }> {
+export async function checkDriveConnection(): Promise<{
+  ok: boolean;
+  message: string;
+  warnings?: SharingWarning[];
+  sharedWith?: string[];
+}> {
   if (!driveAvailable()) {
     return {
       ok: false,
@@ -122,10 +206,16 @@ export async function checkDriveConnection(): Promise<{ ok: boolean; message: st
   try {
     const res = await driveClient().files.get({
       fileId: rootFolderId(),
-      fields: 'id,name',
+      fields: 'id,name,permissions(type,role,emailAddress)',
       supportsAllDrives: true,
     });
-    return { ok: true, message: `Connected to the Drive folder "${res.data.name}".` };
+    const sharing = describeSharing(res.data.permissions ?? [], serviceAccountEmail());
+    return {
+      ok: true,
+      message: `Connected to the Drive folder "${res.data.name}".`,
+      warnings: sharing.warnings,
+      sharedWith: sharing.sharedWith,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return {

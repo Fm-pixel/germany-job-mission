@@ -52,16 +52,18 @@ export interface TextOptions {
 
 export async function askText(prompt: string, options: TextOptions = {}): Promise<string> {
   const client = anthropic();
-  const response = await client.messages.create({
-    model: anthropicModel(),
-    max_tokens: options.maxTokens ?? 8000,
-    system: [
-      { type: 'text' as const, text: HOUSE_RULES, cache_control: { type: 'ephemeral' as const } },
-      ...(options.system ? [{ type: 'text' as const, text: options.system }] : []),
-    ],
-    ...(options.thinking ? { thinking: { type: 'adaptive' as const } } : {}),
-    messages: [{ role: 'user', content: prompt }],
-  });
+  const response = await withExplainedErrors(() =>
+    client.messages.create({
+      model: anthropicModel(),
+      max_tokens: options.maxTokens ?? 8000,
+      system: [
+        { type: 'text' as const, text: HOUSE_RULES, cache_control: { type: 'ephemeral' as const } },
+        ...(options.system ? [{ type: 'text' as const, text: options.system }] : []),
+      ],
+      ...(options.thinking ? { thinking: { type: 'adaptive' as const } } : {}),
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  );
   return response.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
@@ -81,19 +83,58 @@ export async function askJson<T extends z.ZodType>(
   options: TextOptions = {},
 ): Promise<z.infer<T>> {
   const client = anthropic();
-  const response = await client.messages.parse({
-    model: anthropicModel(),
-    max_tokens: options.maxTokens ?? 8000,
-    system: [
-      { type: 'text' as const, text: HOUSE_RULES, cache_control: { type: 'ephemeral' as const } },
-      ...(options.system ? [{ type: 'text' as const, text: options.system }] : []),
-    ],
-    messages: [{ role: 'user', content }],
-    output_config: { format: zodOutputFormat(schema) },
-  });
+  const response = await withExplainedErrors(() =>
+    client.messages.parse({
+      model: anthropicModel(),
+      max_tokens: options.maxTokens ?? 8000,
+      system: [
+        { type: 'text' as const, text: HOUSE_RULES, cache_control: { type: 'ephemeral' as const } },
+        ...(options.system ? [{ type: 'text' as const, text: options.system }] : []),
+      ],
+      messages: [{ role: 'user', content }],
+      output_config: { format: zodOutputFormat(schema) },
+    }),
+  );
   const parsed = response.parsed_output;
   if (!parsed) throw new Error('The AI answer did not match the expected structure.');
   return parsed as z.infer<T>;
+}
+
+/**
+ * Anthropic's errors are written for developers. These are the ones the owner
+ * of this tool can actually do something about, in words that say what to do.
+ */
+export function explainAiError(err: unknown): string {
+  const status = (err as { status?: number } | null)?.status;
+  const raw = err instanceof Error ? err.message : String(err);
+
+  if (/credit balance is too low/i.test(raw)) {
+    return 'The Anthropic account has run out of credit, so the AI parts are paused. Open console.anthropic.com → Plans & Billing and add credit. Everything else in the tool keeps working; nothing was lost.';
+  }
+  if (status === 401 || /invalid x-api-key|authentication_error/i.test(raw)) {
+    return 'The Anthropic API key was refused. Check ANTHROPIC_API_KEY — if the key was replaced, paste the new one (SETUP_FOR_ME.md step 3).';
+  }
+  if (status === 429 || /rate_limit/i.test(raw)) {
+    return 'The Anthropic API is rate-limiting this account right now. Wait a few minutes and try again — nothing was lost.';
+  }
+  if (status === 529 || /overloaded/i.test(raw)) {
+    return 'The AI service is overloaded at the moment. Try again in a few minutes.';
+  }
+  if (status === 400 && /max_tokens|too long|context/i.test(raw)) {
+    return 'That document is too long for one request. Split it, or upload a shorter version.';
+  }
+  return raw;
+}
+
+/** Runs an AI call and rewrites any failure into something actionable. */
+async function withExplainedErrors<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (err) {
+    const explained = explainAiError(err);
+    if (explained === (err instanceof Error ? err.message : String(err))) throw err;
+    throw Object.assign(new Error(explained), { code: 'AI_ERROR', cause: err });
+  }
 }
 
 export function pdfBlock(body: Buffer): Anthropic.ContentBlockParam {

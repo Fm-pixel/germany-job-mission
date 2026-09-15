@@ -27,8 +27,20 @@ Current step: BUILD_PLAN prompts 1–19 are implemented. Waiting for the cloud a
 | 18 | Opportunity Radar — 17 official programmes with their official pages, weekly re-check, per-person fit, honest notes on short-stay visas and the parents route |
 | 19 | Autopilot — nine agents (Scout, Matcher, Writer, Sender, Chaser, Reader, Radar, Immigration, Coach), `/api/cron/run` wired to Vercel Cron and a GitHub Actions hourly workflow, `rules.md` → strict JSON policy shown on Settings, the "Needs you" inbox, the candidate portal on a private revocable link, and safety rails no rule can switch off |
 
-Tests: 121 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
+Tests: 129 unit tests (vitest) and a 10-case Playwright click-through that runs against the real app. `npm run check` runs lint,
 typecheck, tests and build.
+
+## Connected and verified (tested against the live project, not assumed)
+
+* **Firestore** — the app's own data layer created, read, listed and deleted a record in
+  `gjm_candidates`. Works.
+* **Database rules** — published and verified live: `allow read, write: if false`. No browser can
+  touch the data; only this app's server, through the Admin SDK. The previous rules let **any**
+  signed-in account read and write everything, which with open sign-up meant anyone at all.
+* **Firebase Auth** — one account, `arbeithilfede@gmail.com` / `CfWDd73AMaYe1dFR9AjiUUcPWVJ3`,
+  recorded as the owner.
+* **Drive API** — enabled, the service account authenticates.
+* **Anthropic API** — the key authenticates, but the account has no credit, so AI calls are refused.
 
 ## Blocked on me (only you can do these)
 
@@ -36,10 +48,13 @@ typecheck, tests and build.
    against the live project: email/password sign-in is already on. Still yours to do
    (`SETUP_FOR_ME.md` step 1): enable **Google** and **Phone** sign-in in the console, add the live
    Vercel address to the authorised domains, and download the **service-account key** for the server.
-2. **Google Drive folder + Drive API** — step 2. Until then documents cannot be stored.
-3. **Anthropic API key** — step 3. Until then CV reading, application writing, company research, the
-   Opportunity Radar research, the Chancenkarte criteria and the assistant are switched off (the pages
-   say so and the rule-based parts keep working).
+2. **Share the Drive folder** — step 2. Tested live: the Drive API is on and the service account
+   works, but it can see **zero files**, so the folder is not shared with it yet. Open the folder →
+   Share → `firebase-adminsdk-fbsvc@certifypm-pro.iam.gserviceaccount.com` → **Editor**. "Test the Drive connection" on the Settings page then
+   both proves it works and warns if the folder is readable by anyone with the link.
+3. **Anthropic credit** — step 3. The key works; the account balance is zero, so every AI call comes
+   back refused. Add credit at console.anthropic.com → Plans & Billing. This is the only part that
+   costs money, so it waits for you.
 4. **Vercel deployment and `OWNER_UIDS`** — step 4, then step 5 to publish the database rules.
    Sign in with each method once and record every user id: a phone sign-in is always a separate
    Firebase user from the email/Google one.
@@ -120,3 +135,42 @@ file (`src/services/email/mime.ts`), and the Drive helpers now accept a client s
 * No immigration threshold, amount, points table or language level is written into the code from memory.
   Those values only ever appear after "Re-check sources" has really read the official page, and they are
   stored with that page's URL and the date.
+
+## The live deployment answered (13 September)
+
+The address `https://germany-job-mission.vercel.app/login` returned the login screen and the sign-in
+attempt reached Firebase, which refused it with `auth/unauthorized-domain`. That is three separate
+things confirmed at once: the deployment is live, the Firebase variables reached it, and the login
+screen's plain-language error handling works — the sentence shown is this app's own wording for that
+Firebase code, not a crash.
+
+Nothing to fix in the code. What is left is one click in the Firebase console: add the host name
+`germany-job-mission.vercel.app` under **Authentication → Settings → Authorised domains**. SETUP_FOR_ME.md
+step 1b now names that exact address instead of calling it an example.
+
+## Service-account key rotated (13 September)
+
+The old key (`c5be578b1b…`) had passed through a chat transcript, so it was replaced with a freshly
+generated one (`8c7ac8a9ac…`). Verified against the live project with the new key in place: minting an
+access token works, Firestore reads work, and the app's own `/api/health` reports the database
+connected. Drive still answers "File not found" — that is the folder share, not the key.
+
+The key lives only in `.env.local`, which git ignores; nothing secret is in any tracked file. The copy
+in Vercel has to be replaced by hand, and the old key deleted in the Firebase console, or the old one
+stays valid.
+
+## Google Drive is connected (13 September)
+
+The owner shared the folder, and the service account now reaches it. Checked directly:
+
+* folder — "Germany Job Mission – Documents", owned by the owner's own account
+* shared with exactly two: the owner (owner) and the service account (writer). No link sharing, no
+  domain sharing, nobody else.
+* write test — created a temporary folder inside it and removed it again, so uploads will work.
+
+The same run confirmed the base64 shape of `FIREBASE_SERVICE_ACCOUNT_JSON` is accepted end to end, which
+is what SETUP_FOR_ME.md now recommends for the Vercel form: the raw file spans many lines and web forms
+mangle it, base64 is one unbreakable line, and the parser already decodes it.
+
+Health now reads: Firestore OK, Drive OK, AI key present, owner lock OK. Only email sending is still
+"not connected", which is the intended state — nothing sends without an approval.
